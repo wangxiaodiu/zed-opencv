@@ -33,10 +33,27 @@
 #include <ctime>
 #include <chrono>
 
+// darknet api header files
+#include "arapaho.hpp"
+#include "opencv2/core/core.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include <sys/types.h>
+#include <sys/stat.h>
+#define MAX_OBJECTS_PER_FRAME (100)
+// darkent end
+
 #include <opencv2/opencv.hpp>
 
 #include <zed/Camera.hpp>
 #include <zed/utils/GlobalDefine.hpp>
+
+//
+// Some configuration inputs
+//
+static char INPUT_DATA_FILE[]    = "input.data"; 
+static char INPUT_CFG_FILE[]     = "input.cfg";
+static char INPUT_WEIGHTS_FILE[] = "input.weights";
+static char INPUT_IMAGE_FILE[]   = "input.jpg";
 
 typedef struct mouseOCVStruct {
     float* data;
@@ -144,7 +161,7 @@ int main(int argc, char **argv) {
     cv::Mat anaglyph(height, width, CV_8UC4);
     cv::Mat confidencemap(height, width, CV_8UC4);
 
-    cv::Size displaySize(720, 404);
+    cv::Size displaySize(720*2, 404*2);
     cv::Mat dispDisplay(displaySize, CV_8UC4);
     cv::Mat anaglyphDisplay(displaySize, CV_8UC4);
     cv::Mat confidencemapDisplay(displaySize, CV_8UC4);
@@ -171,9 +188,13 @@ int main(int argc, char **argv) {
     // 	use the default rendering by removing ' | cv::WINDOW_OPENGL' from the flags
     //	or recompile OpenCV with OpenGL support (you may also need the gtk OpenGL Extension
     //	on Linux, provided by the packages libgtkglext1 libgtkglext1-dev)
-    cv::namedWindow(mouseStruct.name, cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
+    cv::namedWindow(mouseStruct.name, cv::WINDOW_AUTOSIZE);
     cv::setMouseCallback(mouseStruct.name, onMouseCallback, (void*) &mouseStruct);
-    cv::namedWindow("VIEW", cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
+    cv::namedWindow("VIEW", cv::WINDOW_AUTOSIZE);
+
+    //cv::resizeWindow("VIEW", 10240, 7200);
+    // cv::resizeWindow(mouseStruct.name, 10240, 7200);
+   
 
     std::cout << "Press 'q' to exit" << std::endl;
 
@@ -181,6 +202,36 @@ int main(int argc, char **argv) {
     sl::zed::Camera::sticktoCPUCore(2);
 
     sl::zed::ZED_SELF_CALIBRATION_STATUS old_self_calibration_status = sl::zed::SELF_CALIBRATION_NOT_CALLED;
+
+    /******************** DARKNET-CPP API *****************************/
+    // darknet-cpp api
+    box* boxes = 0;
+    ArapahoV2* p = new ArapahoV2();
+    if(!p)
+      {
+        return -1;
+      }
+    ArapahoV2Params ap;
+    ap.datacfg = INPUT_DATA_FILE;
+    ap.cfgfile = INPUT_CFG_FILE;
+    ap.weightfile = INPUT_WEIGHTS_FILE;
+    ap.nms = 0.4;
+    ap.maxClasses = 2;
+    // Always setup before detect
+    int expectedW = 0, expectedH = 0;
+    bool ret = false;
+    ret = p->Setup(ap, expectedW, expectedH);
+    if(false == ret)
+      {
+        printf("Setup failed!\n");
+        if(p) delete p;
+        p = 0;
+        return -1;
+      }
+    ArapahoV2ImageBuff arapahoImage;
+    cv::Mat &image = anaglyphDisplay;
+    int numObjects = 0;
+    /******************** DARKNET-CPP API END **************************/
 
     // Loop until 'q' is pressed
     while (key != 'q') {
@@ -213,7 +264,6 @@ int main(int argc, char **argv) {
 
             // To get the depth at a given position, click on the disparity / depth map image
             cv::resize(disp, dispDisplay, displaySize);
-            imshow(mouseStruct.name, dispDisplay);
 
             if (displayConfidenceMap) {
                 slMat2cvMat(zed->normalizeMeasure(sl::zed::MEASURE::CONFIDENCE)).copyTo(confidencemap);
@@ -228,7 +278,43 @@ int main(int argc, char **argv) {
                 slMat2cvMat(zed->getView(static_cast<sl::zed::VIEW_MODE> (viewID - (int) sl::zed::LAST_SIDE))).copyTo(anaglyph);
 
             cv::resize(anaglyph, anaglyphDisplay, displaySize);
+            /**************DARKNET API**************************/
+            printf("Image data = %p, w = %d, h = %d\n", image.data, image.size().width, image.size().height);
+            arapahoImage.bgr = image.data;
+            arapahoImage.w = image.size().width;
+            arapahoImage.h = image.size().height;
+            arapahoImage.channels = 4;
+            // Detect the objects in the image
+            p->Detect(arapahoImage,
+                      0.24,
+                      0.5,
+                      numObjects);
+            printf("Detected %d objects\n", numObjects);
+            if(numObjects > 0 && numObjects < MAX_OBJECTS_PER_FRAME) // Realistic maximum
+              {
+                boxes = new box[numObjects];
+                if(!boxes)
+                  {
+                    printf("Nothing detected\n");
+                    // if(p) delete p;
+                    // p = 0;
+                    // return -1;
+                  }
+                p->GetBoxes(boxes,
+                            numObjects);
+                for(int i=0; i<numObjects; ++i){
+                  printf("Box #%d: x,y,w,h = [%f, %f, %f, %f]\n\n", i, boxes[i].x, boxes[i].y, boxes[i].w, boxes[i].h);
+                  int left  = (boxes[i].x-boxes[i].w/2.)*arapahoImage.w;
+                  int right = (boxes[i].x+boxes[i].w/2.)*arapahoImage.w;
+                  int top   = (boxes[i].y-boxes[i].h/2.)*arapahoImage.h;
+                  int bot   = (boxes[i].y+boxes[i].h/2.)*arapahoImage.h;
+                  cv::rectangle(dispDisplay, cv::Point(left, bot), cv::Point(right, top), cv::Scalar(255,0,0), 5);
+                  cv::rectangle(anaglyphDisplay, cv::Point(left, bot), cv::Point(right, top), cv::Scalar(255,0,0), 5);
+                }
+              }
+            /**************DARKNET API**************************/
             imshow("VIEW", anaglyphDisplay);
+            imshow(mouseStruct.name, dispDisplay);
 
             key = cv::waitKey(5);
 
