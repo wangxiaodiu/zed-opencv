@@ -40,6 +40,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #define MAX_OBJECTS_PER_FRAME (100)
+#include <string>
 // darkent end
 
 #include <opencv2/opencv.hpp>
@@ -205,8 +206,9 @@ int main(int argc, char **argv) {
 
     /******************** DARKNET-CPP API *****************************/
     // darknet-cpp api
-    const bool DEBUG = false;
+    const bool DEBUG = true;
     box* boxes = 0;
+    std::string * labels;
     ArapahoV2* p = new ArapahoV2();
     if(!p)
       {
@@ -299,6 +301,7 @@ int main(int argc, char **argv) {
             if(numObjects > 0 && numObjects < MAX_OBJECTS_PER_FRAME) // Realistic maximum
               {
                 boxes = new box[numObjects];
+                labels = new std::string[numObjects];
                 if(!boxes)
                   {
                     printf("Nothing detected\n");
@@ -307,11 +310,16 @@ int main(int argc, char **argv) {
                     // return -1;
                   }
                 p->GetBoxes(boxes,
-                            numObjects);
+                            numObjects,
+                            labels);
                 int left, right, top, bot;
                 cv::Scalar rect_color(255,0,0);
                 for(int i=0; i<numObjects; ++i){
-                  if(DEBUG) {printf("Box #%d: x,y,w,h = [%f, %f, %f, %f]\n\n", i, boxes[i].x, boxes[i].y, boxes[i].w, boxes[i].h);}
+                  if(DEBUG) {
+                    std::cout << "labes:" << labels[i];
+                    printf("Box #%d: x,y,w,h = [%f, %f, %f, %f]\n", i, boxes[i].x, boxes[i].y, boxes[i].w, boxes[i].h);
+                    std::cout << std::endl;
+                  }
                   left  = (boxes[i].x-boxes[i].w/2.)*displaySize.width;
                   right = (boxes[i].x+boxes[i].w/2.)*displaySize.width;
                   top   = (boxes[i].y-boxes[i].h/2.)*displaySize.height;

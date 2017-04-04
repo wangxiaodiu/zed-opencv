@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <string>
 #include "network.h"
 #include "detection_layer.h"
 #include "cost_layer.h"
@@ -70,9 +71,10 @@
 			float hier_thresh,
 			int & objectCount);
 
-		bool GetBoxes(box* outBoxes, int boxCount);
+		bool GetBoxes(box* outBoxes, int boxCount, std::string* labels);
 	private:
 		box     *boxes;
+        char    **names;
 		float   **probs;
 		bool    bSetup;
 		network net;
