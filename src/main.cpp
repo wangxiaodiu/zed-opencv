@@ -316,7 +316,7 @@ int main(int argc, char **argv) {
                 cv::Scalar rect_color(255,0,0);
                 for(int i=0; i<numObjects; ++i){
                   if(DEBUG) {
-                    std::cout << "labes:" << labels[i];
+                    std::cout << "Labels:" << labels[i];
                     printf("Box #%d: x,y,w,h = [%f, %f, %f, %f]\n", i, boxes[i].x, boxes[i].y, boxes[i].w, boxes[i].h);
                     std::cout << std::endl;
                   }
@@ -325,7 +325,9 @@ int main(int argc, char **argv) {
                   top   = (boxes[i].y-boxes[i].h/2.)*displaySize.height;
                   bot   = (boxes[i].y+boxes[i].h/2.)*displaySize.height;
                   cv::rectangle(dispDisplay, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
+                  cv::putText(dispDisplay, labels[i], cv::Point(left, top), 0, 0.8, cvScalar(0,0,255), 2, CV_AA);
                   cv::rectangle(anaglyphDisplay, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
+                  cv::putText(anaglyphDisplay, labels[i], cv::Point(left, top), 0, 0.8, cvScalar(0,0,255), 2, CV_AA);
                 }
               }
             /**************DARKNET API**************************/
@@ -333,7 +335,7 @@ int main(int argc, char **argv) {
             imshow("VIEW", anaglyphDisplay);
             imshow(mouseStruct.name, dispDisplay);
 
-            key = cv::waitKey(5);
+            key = cv::waitKey(1);
 
             // Keyboard shortcuts
             switch (key) {
