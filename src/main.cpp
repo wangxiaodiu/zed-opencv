@@ -162,6 +162,7 @@ int main(int argc, char **argv) {
     cv::Mat confidencemap(height, width, CV_8UC4);
 
     cv::Size displaySize(720*2, 404*2);
+    // cv::Size displaySize(416, 416);
     cv::Mat dispDisplay(displaySize, CV_8UC4);
     cv::Mat anaglyphDisplay(displaySize, CV_8UC4);
     cv::Mat confidencemapDisplay(displaySize, CV_8UC4);
@@ -194,7 +195,6 @@ int main(int argc, char **argv) {
 
     //cv::resizeWindow("VIEW", 10240, 7200);
     // cv::resizeWindow(mouseStruct.name, 10240, 7200);
-   
 
     std::cout << "Press 'q' to exit" << std::endl;
 
@@ -205,6 +205,7 @@ int main(int argc, char **argv) {
 
     /******************** DARKNET-CPP API *****************************/
     // darknet-cpp api
+    const bool DEBUG = false;
     box* boxes = 0;
     ArapahoV2* p = new ArapahoV2();
     if(!p)
@@ -229,7 +230,8 @@ int main(int argc, char **argv) {
         return -1;
       }
     ArapahoV2ImageBuff arapahoImage;
-    cv::Mat &image = anaglyphDisplay;
+    cv::Size imageSize(416, 416);
+    cv::Mat image(imageSize, CV_8UC4);
     int numObjects = 0;
     /******************** DARKNET-CPP API END **************************/
 
@@ -279,7 +281,8 @@ int main(int argc, char **argv) {
 
             cv::resize(anaglyph, anaglyphDisplay, displaySize);
             /**************DARKNET API**************************/
-            printf("Image data = %p, w = %d, h = %d\n", image.data, image.size().width, image.size().height);
+            cv::resize(anaglyph, image, imageSize);
+            // printf("Image data = %p, w = %d, h = %d\n", image.data, image.size().width, image.size().height);
             arapahoImage.bgr = image.data;
             arapahoImage.w = image.size().width;
             arapahoImage.h = image.size().height;
@@ -289,7 +292,9 @@ int main(int argc, char **argv) {
                       0.24,
                       0.5,
                       numObjects);
-            printf("Detected %d objects\n", numObjects);
+            if(DEBUG){
+              printf("Detected %d objects\n", numObjects);
+            }
             if(numObjects > 0 && numObjects < MAX_OBJECTS_PER_FRAME) // Realistic maximum
               {
                 boxes = new box[numObjects];
@@ -303,11 +308,13 @@ int main(int argc, char **argv) {
                 p->GetBoxes(boxes,
                             numObjects);
                 for(int i=0; i<numObjects; ++i){
-                  printf("Box #%d: x,y,w,h = [%f, %f, %f, %f]\n\n", i, boxes[i].x, boxes[i].y, boxes[i].w, boxes[i].h);
-                  int left  = (boxes[i].x-boxes[i].w/2.)*arapahoImage.w;
-                  int right = (boxes[i].x+boxes[i].w/2.)*arapahoImage.w;
-                  int top   = (boxes[i].y-boxes[i].h/2.)*arapahoImage.h;
-                  int bot   = (boxes[i].y+boxes[i].h/2.)*arapahoImage.h;
+                  if(DEBUG) {
+                    printf("Box #%d: x,y,w,h = [%f, %f, %f, %f]\n\n", i, boxes[i].x, boxes[i].y, boxes[i].w, boxes[i].h);
+                  }
+                  int left  = (boxes[i].x-boxes[i].w/2.)*displaySize.width;
+                  int right = (boxes[i].x+boxes[i].w/2.)*displaySize.width;
+                  int top   = (boxes[i].y-boxes[i].h/2.)*displaySize.height;
+                  int bot   = (boxes[i].y+boxes[i].h/2.)*displaySize.height;
                   cv::rectangle(dispDisplay, cv::Point(left, bot), cv::Point(right, top), cv::Scalar(255,0,0), 5);
                   cv::rectangle(anaglyphDisplay, cv::Point(left, bot), cv::Point(right, top), cv::Scalar(255,0,0), 5);
                 }
