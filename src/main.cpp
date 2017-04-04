@@ -280,6 +280,7 @@ int main(int argc, char **argv) {
                 slMat2cvMat(zed->getView(static_cast<sl::zed::VIEW_MODE> (viewID - (int) sl::zed::LAST_SIDE))).copyTo(anaglyph);
 
             cv::resize(anaglyph, anaglyphDisplay, displaySize);
+
             /**************DARKNET API**************************/
             cv::resize(anaglyph, image, imageSize);
             // printf("Image data = %p, w = %d, h = %d\n", image.data, image.size().width, image.size().height);
@@ -307,19 +308,20 @@ int main(int argc, char **argv) {
                   }
                 p->GetBoxes(boxes,
                             numObjects);
+                int left, right, top, bot;
+                cv::Scalar rect_color(255,0,0);
                 for(int i=0; i<numObjects; ++i){
-                  if(DEBUG) {
-                    printf("Box #%d: x,y,w,h = [%f, %f, %f, %f]\n\n", i, boxes[i].x, boxes[i].y, boxes[i].w, boxes[i].h);
-                  }
-                  int left  = (boxes[i].x-boxes[i].w/2.)*displaySize.width;
-                  int right = (boxes[i].x+boxes[i].w/2.)*displaySize.width;
-                  int top   = (boxes[i].y-boxes[i].h/2.)*displaySize.height;
-                  int bot   = (boxes[i].y+boxes[i].h/2.)*displaySize.height;
-                  cv::rectangle(dispDisplay, cv::Point(left, bot), cv::Point(right, top), cv::Scalar(255,0,0), 5);
-                  cv::rectangle(anaglyphDisplay, cv::Point(left, bot), cv::Point(right, top), cv::Scalar(255,0,0), 5);
+                  if(DEBUG) {printf("Box #%d: x,y,w,h = [%f, %f, %f, %f]\n\n", i, boxes[i].x, boxes[i].y, boxes[i].w, boxes[i].h);}
+                  left  = (boxes[i].x-boxes[i].w/2.)*displaySize.width;
+                  right = (boxes[i].x+boxes[i].w/2.)*displaySize.width;
+                  top   = (boxes[i].y-boxes[i].h/2.)*displaySize.height;
+                  bot   = (boxes[i].y+boxes[i].h/2.)*displaySize.height;
+                  cv::rectangle(dispDisplay, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
+                  cv::rectangle(anaglyphDisplay, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
                 }
               }
             /**************DARKNET API**************************/
+
             imshow("VIEW", anaglyphDisplay);
             imshow(mouseStruct.name, dispDisplay);
 
