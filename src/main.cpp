@@ -158,13 +158,13 @@ int main(int argc, char **argv) {
     int width = zed->getImageSize().width;
     int height = zed->getImageSize().height;
 
-    cv::Mat disp(height, width, CV_8UC4);
+    cv::Mat disp(height, width, CV_8UC1);
     cv::Mat anaglyph(height, width, CV_8UC4);
     cv::Mat confidencemap(height, width, CV_8UC4);
 
-    cv::Size displaySize(720*2, 404*2);
+    cv::Size displaySize(720*3, 404*3);
     // cv::Size displaySize(416, 416);
-    cv::Mat dispDisplay(displaySize, CV_8UC4);
+    cv::Mat dispDisplay(displaySize, CV_8UC1);
     cv::Mat anaglyphDisplay(displaySize, CV_8UC4);
     cv::Mat confidencemapDisplay(displaySize, CV_8UC4);
 
@@ -235,6 +235,7 @@ int main(int argc, char **argv) {
     cv::Size imageSize(416, 416);
     cv::Mat image(imageSize, CV_8UC4);
     int numObjects = 0;
+    cv::Mat colorDisp, colorAdjDisp;
     /******************** DARKNET-CPP API END **************************/
 
     // Loop until 'q' is pressed
@@ -268,6 +269,7 @@ int main(int argc, char **argv) {
 
             // To get the depth at a given position, click on the disparity / depth map image
             cv::resize(disp, dispDisplay, displaySize);
+            cvtColor(dispDisplay,dispDisplay, CV_BGR2GRAY);
 
             if (displayConfidenceMap) {
                 slMat2cvMat(zed->normalizeMeasure(sl::zed::MEASURE::CONFIDENCE)).copyTo(confidencemap);
@@ -312,11 +314,46 @@ int main(int argc, char **argv) {
                 p->GetBoxes(boxes,
                             numObjects,
                             labels);
+
+                // get depth info
+                double minVal, maxVal, meanVal;
+                int x,y,w,h;
                 int left, right, top, bot;
-                cv::Scalar rect_color(255,0,0);
                 for(int i=0; i<numObjects; ++i){
                   if(DEBUG) {
-                    std::cout << "Labels:" << labels[i];
+                    printf("Box #%d: x,y,w,h = [%f, %f, %f, %f]\n", i, boxes[i].x, boxes[i].y, boxes[i].w, boxes[i].h);
+                  }
+                  x  = (boxes[i].x-boxes[i].w/2.)*displaySize.width;
+                  if(x>1) x=1; if(x<0) x=0;
+                  y   = (boxes[i].y-boxes[i].h/2.)*displaySize.height;
+                  if(y>1) y=1; if(y<0) y=0;
+                  w = boxes[i].w * displaySize.width;
+                  if(x+w>displaySize.width) w = displaySize.width - x;
+                  h = boxes[i].h * displaySize.height;
+                  if(y+h>displaySize.height) h = displaySize.height - y;
+                  cv::minMaxLoc(dispDisplay(cv::Rect(x,y,w,h)), &minVal, &maxVal);
+                  meanVal = cv::mean(dispDisplay(cv::Rect(x,y,w,h))).val[0];
+                  if(DEBUG){
+                    std::cout << minVal << ' ' << meanVal << ' ' << maxVal << std::endl;
+                  }
+                  labels[i] += ", ";
+                  labels[i] += std::to_string(minVal);
+                  labels[i] += ", ";
+                  labels[i] += std::to_string(meanVal);
+                  labels[i] += ", ";
+                  labels[i] += std::to_string(maxVal);
+
+                }
+
+                // draw the bounding boxes and info
+                cv::Scalar rect_color(255,255,255);
+                cv::Scalar text_color(255,255,255);
+                // cvtColor(dispDisplay,colorAdjDisp, CV_BGR2GRAY);
+                // cv::applyColorMap(colorAdjDisp, colorDisp, cv::COLORMAP_RAINBOW);
+                cv::applyColorMap(dispDisplay, colorDisp, cv::COLORMAP_RAINBOW);
+                for(int i=0; i<numObjects; ++i){
+                  if(DEBUG) {
+                    std::cout << labels[i] << ',';
                     printf("Box #%d: x,y,w,h = [%f, %f, %f, %f]\n", i, boxes[i].x, boxes[i].y, boxes[i].w, boxes[i].h);
                     std::cout << std::endl;
                   }
@@ -324,16 +361,22 @@ int main(int argc, char **argv) {
                   right = (boxes[i].x+boxes[i].w/2.)*displaySize.width;
                   top   = (boxes[i].y-boxes[i].h/2.)*displaySize.height;
                   bot   = (boxes[i].y+boxes[i].h/2.)*displaySize.height;
-                  cv::rectangle(dispDisplay, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
-                  cv::putText(dispDisplay, labels[i], cv::Point(left, top), 0, 0.8, cvScalar(0,0,255), 2, CV_AA);
+
+                  // cv::rectangle(dispDisplay, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
+                  // cv::putText(dispDisplay, labels[i], cv::Point(left, top), 0, 0.8, cvScalar(0,0,255), 2, CV_AA);
+                  cv::rectangle(colorDisp, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
+                  cv::putText(colorDisp, labels[i], cv::Point(left, top), 0, 0.8, text_color, 2, CV_AA);
                   cv::rectangle(anaglyphDisplay, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
-                  cv::putText(anaglyphDisplay, labels[i], cv::Point(left, top), 0, 0.8, cvScalar(0,0,255), 2, CV_AA);
+                  cv::putText(anaglyphDisplay, labels[i], cv::Point(left, top), 0, 0.8, text_color, 2, CV_AA);
                 }
+                //clean up
+                delete[] boxes;
+                delete[] labels;
               }
             /**************DARKNET API**************************/
 
             imshow("VIEW", anaglyphDisplay);
-            imshow(mouseStruct.name, dispDisplay);
+            imshow(mouseStruct.name, colorDisp);
 
             key = cv::waitKey(1);
 
@@ -388,5 +431,6 @@ int main(int argc, char **argv) {
     }
 
     delete zed;
+    delete p;
     return 0;
 }
