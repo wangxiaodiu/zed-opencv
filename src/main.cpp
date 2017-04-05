@@ -206,7 +206,7 @@ int main(int argc, char **argv) {
 
     /******************** DARKNET-CPP API *****************************/
     // darknet-cpp api
-    const bool DEBUG = true;
+    const bool DEBUG = false;
     box* boxes = 0;
     std::string * labels;
     ArapahoV2* p = new ArapahoV2();
@@ -235,7 +235,7 @@ int main(int argc, char **argv) {
     cv::Size imageSize(416, 416);
     cv::Mat image(imageSize, CV_8UC4);
     int numObjects = 0;
-    cv::Mat colorDisp, colorAdjDisp;
+    cv::Mat colorDisp;
     /******************** DARKNET-CPP API END **************************/
 
     // Loop until 'q' is pressed
@@ -316,10 +316,15 @@ int main(int argc, char **argv) {
                             labels);
 
                 // get depth info
-                double minVal, maxVal, meanVal;
+                double *meanValArray = new double[numObjects];
+                double *minValArray = new double[numObjects];
+                double *maxValArray = new double[numObjects];
+                cv::Scalar *rect_colorArray = new cv::Scalar[numObjects];
                 int x,y,w,h;
                 int left, right, top, bot;
+                cv::applyColorMap(dispDisplay, colorDisp, cv::COLORMAP_JET);
                 for(int i=0; i<numObjects; ++i){
+                  double minVal, maxVal, meanVal;
                   if(DEBUG) {
                     printf("Box #%d: x,y,w,h = [%f, %f, %f, %f]\n", i, boxes[i].x, boxes[i].y, boxes[i].w, boxes[i].h);
                   }
@@ -336,21 +341,18 @@ int main(int argc, char **argv) {
                   if(DEBUG){
                     std::cout << minVal << ' ' << meanVal << ' ' << maxVal << std::endl;
                   }
-                  labels[i] += ", ";
-                  labels[i] += std::to_string(minVal);
-                  labels[i] += ", ";
-                  labels[i] += std::to_string(meanVal);
-                  labels[i] += ", ";
-                  labels[i] += std::to_string(maxVal);
 
+                  meanValArray[i] = meanVal;
+                  minValArray[i] = minVal;
+                  maxValArray[i] = maxVal;
+
+                  // get rect color
+                  rect_colorArray[i] = cv::mean(colorDisp(cv::Rect(x,y,w,h)));
                 }
 
                 // draw the bounding boxes and info
-                cv::Scalar rect_color(255,255,255);
                 cv::Scalar text_color(255,255,255);
-                // cvtColor(dispDisplay,colorAdjDisp, CV_BGR2GRAY);
-                // cv::applyColorMap(colorAdjDisp, colorDisp, cv::COLORMAP_RAINBOW);
-                cv::applyColorMap(dispDisplay, colorDisp, cv::COLORMAP_RAINBOW);
+                // cv::applyColorMap(dispDisplay, dispDisplay, cv::COLORMAP_JET);
                 for(int i=0; i<numObjects; ++i){
                   if(DEBUG) {
                     std::cout << labels[i] << ',';
@@ -362,12 +364,23 @@ int main(int argc, char **argv) {
                   top   = (boxes[i].y-boxes[i].h/2.)*displaySize.height;
                   bot   = (boxes[i].y+boxes[i].h/2.)*displaySize.height;
 
-                  // cv::rectangle(dispDisplay, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
-                  // cv::putText(dispDisplay, labels[i], cv::Point(left, top), 0, 0.8, cvScalar(0,0,255), 2, CV_AA);
-                  cv::rectangle(colorDisp, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
-                  cv::putText(colorDisp, labels[i], cv::Point(left, top), 0, 0.8, text_color, 2, CV_AA);
+                  double &minVal = minValArray[i];
+                  double &maxVal = maxValArray[i];
+                  double &meanVal = meanValArray[i];
+
+
+                  // draw
+                  cv::Scalar &rect_color = rect_colorArray[i];
+                  std::string info;
+                  info = "("; info += std::to_string(minVal); info += ", "; info += std::to_string(meanVal); info += ", "; info += std::to_string(maxVal); info += ")";
+
+                  cv::rectangle(dispDisplay, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
+                  cv::putText(dispDisplay, labels[i], cv::Point(left, top), 0, 1, text_color, 2, CV_AA);
+                  cv::putText(dispDisplay, info, cv::Point(left, bot), 0, 1, text_color, 2, CV_AA);
+
                   cv::rectangle(anaglyphDisplay, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
-                  cv::putText(anaglyphDisplay, labels[i], cv::Point(left, top), 0, 0.8, text_color, 2, CV_AA);
+                  cv::putText(anaglyphDisplay, labels[i], cv::Point(left, top), 0, 1, text_color, 2, CV_AA);
+                  cv::putText(anaglyphDisplay, info, cv::Point(left, bot), 0, 1, text_color, 2, CV_AA);
                 }
                 //clean up
                 delete[] boxes;
@@ -376,7 +389,7 @@ int main(int argc, char **argv) {
             /**************DARKNET API**************************/
 
             imshow("VIEW", anaglyphDisplay);
-            imshow(mouseStruct.name, colorDisp);
+            imshow(mouseStruct.name, dispDisplay);
 
             key = cv::waitKey(1);
 
