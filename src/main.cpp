@@ -269,7 +269,6 @@ int main(int argc, char **argv) {
 
             // To get the depth at a given position, click on the disparity / depth map image
             cv::resize(disp, dispDisplay, displaySize);
-            cvtColor(dispDisplay,dispDisplay, CV_BGR2GRAY);
 
             if (displayConfidenceMap) {
                 slMat2cvMat(zed->normalizeMeasure(sl::zed::MEASURE::CONFIDENCE)).copyTo(confidencemap);
@@ -286,8 +285,8 @@ int main(int argc, char **argv) {
             cv::resize(anaglyph, anaglyphDisplay, displaySize);
 
             /**************DARKNET API**************************/
+            // Initialization
             cv::resize(anaglyph, image, imageSize);
-            // printf("Image data = %p, w = %d, h = %d\n", image.data, image.size().width, image.size().height);
             arapahoImage.bgr = image.data;
             arapahoImage.w = image.size().width;
             arapahoImage.h = image.size().height;
@@ -307,48 +306,11 @@ int main(int argc, char **argv) {
                 if(!boxes)
                   {
                     printf("Nothing detected\n");
-                    // if(p) delete p;
-                    // p = 0;
-                    // return -1;
                   }
-                p->GetBoxes(boxes,
-                            numObjects,
-                            labels);
+                p->GetBoxes(boxes, numObjects, labels);
 
                 // get depth info
-                double *meanValArray = new double[numObjects];
-                double *minValArray = new double[numObjects];
-                double *maxValArray = new double[numObjects];
-                cv::Scalar *rect_colorArray = new cv::Scalar[numObjects];
-                int x,y,w,h;
-                int left, right, top, bot;
-                cv::applyColorMap(dispDisplay, colorDisp, cv::COLORMAP_JET);
-                for(int i=0; i<numObjects; ++i){
-                  double minVal, maxVal, meanVal;
-                  if(DEBUG) {
-                    printf("Box #%d: x,y,w,h = [%f, %f, %f, %f]\n", i, boxes[i].x, boxes[i].y, boxes[i].w, boxes[i].h);
-                  }
-                  x  = (boxes[i].x-boxes[i].w/2.)*displaySize.width;
-                  if(x>1) x=1; if(x<0) x=0;
-                  y   = (boxes[i].y-boxes[i].h/2.)*displaySize.height;
-                  if(y>1) y=1; if(y<0) y=0;
-                  w = boxes[i].w * displaySize.width;
-                  if(x+w>displaySize.width) w = displaySize.width - x;
-                  h = boxes[i].h * displaySize.height;
-                  if(y+h>displaySize.height) h = displaySize.height - y;
-                  cv::minMaxLoc(dispDisplay(cv::Rect(x,y,w,h)), &minVal, &maxVal);
-                  meanVal = cv::mean(dispDisplay(cv::Rect(x,y,w,h))).val[0];
-                  if(DEBUG){
-                    std::cout << minVal << ' ' << meanVal << ' ' << maxVal << std::endl;
-                  }
-
-                  meanValArray[i] = meanVal;
-                  minValArray[i] = minVal;
-                  maxValArray[i] = maxVal;
-
-                  // get rect color
-                  rect_colorArray[i] = cv::mean(colorDisp(cv::Rect(x,y,w,h)));
-                }
+                // TODO
 
                 // draw the bounding boxes and info
                 cv::Scalar text_color(255,255,255);
@@ -359,20 +321,14 @@ int main(int argc, char **argv) {
                     printf("Box #%d: x,y,w,h = [%f, %f, %f, %f]\n", i, boxes[i].x, boxes[i].y, boxes[i].w, boxes[i].h);
                     std::cout << std::endl;
                   }
-                  left  = (boxes[i].x-boxes[i].w/2.)*displaySize.width;
-                  right = (boxes[i].x+boxes[i].w/2.)*displaySize.width;
-                  top   = (boxes[i].y-boxes[i].h/2.)*displaySize.height;
-                  bot   = (boxes[i].y+boxes[i].h/2.)*displaySize.height;
-
-                  double &minVal = minValArray[i];
-                  double &maxVal = maxValArray[i];
-                  double &meanVal = meanValArray[i];
-
+                  int left  = (boxes[i].x-boxes[i].w/2.)*displaySize.width;
+                  int right = (boxes[i].x+boxes[i].w/2.)*displaySize.width;
+                  int top   = (boxes[i].y-boxes[i].h/2.)*displaySize.height;
+                  int bot   = (boxes[i].y+boxes[i].h/2.)*displaySize.height;
 
                   // draw
-                  cv::Scalar &rect_color = rect_colorArray[i];
-                  std::string info;
-                  info = "("; info += std::to_string(minVal); info += ", "; info += std::to_string(meanVal); info += ", "; info += std::to_string(maxVal); info += ")";
+                  cv::Scalar &rect_color = text_color; //TODO
+                  std::string info = "No info now";
 
                   cv::rectangle(dispDisplay, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
                   cv::putText(dispDisplay, labels[i], cv::Point(left, top), 0, 1, text_color, 2, CV_AA);
