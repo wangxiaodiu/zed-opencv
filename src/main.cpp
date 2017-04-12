@@ -309,8 +309,9 @@ int main(int argc, char **argv) {
                   }
                 p->GetBoxes(boxes, numObjects, labels);
 
-                // get depth info
-                // TODO
+                // get depth measure
+                sl::zed::Mat point_cloud;
+                point_cloud = zed->retrieveMeasure(sl::zed::MEASURE::XYZRGBA);
 
                 // draw the bounding boxes and info
                 cv::Scalar text_color(255,255,255);
@@ -326,9 +327,19 @@ int main(int argc, char **argv) {
                   int top   = (boxes[i].y-boxes[i].h/2.)*displaySize.height;
                   int bot   = (boxes[i].y+boxes[i].h/2.)*displaySize.height;
 
+                  // extract depth info
+                  sl::uchar3 point_depth;
+                  point_depth = point_cloud.getValue((int)boxes[i].x*displaySize.width, (int)boxes[i].y*displaySize.height); // Get the 3D point cloud values for pixel (i,j)
+                  int x = point_depth.c1;
+                  int y = point_depth.c2;
+                  int z = point_depth.c3;
+                  float distance = sqrt(x*x + y*y + z*z); // Measure the distance
+
                   // draw
                   cv::Scalar &rect_color = text_color; //TODO
-                  std::string info = "No info now";
+                  std::string info = std::to_string(distance);
+                  info += " cm";
+                  // TODO : std::stringstream stream;
 
                   cv::rectangle(dispDisplay, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
                   cv::putText(dispDisplay, labels[i], cv::Point(left, top), 0, 1, text_color, 2, CV_AA);
