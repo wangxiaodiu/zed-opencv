@@ -44,6 +44,8 @@ ENDIF(WIN32)
 find_package(OpenCV ${VERSION_REQ_OCV} REQUIRED)
 find_package(CUDA ${VERSION_REQ_CUDA} REQUIRED)
 
+LINK_DIRECTORIES(../lib)
+
 include_directories(${CUDA_INCLUDE_DIRS})
 include_directories(${ZED_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -54,13 +56,18 @@ link_directories(${CUDA_LIBRARY_DIRS})
 
 SET(SRC_FOLDER src)
 FILE(GLOB_RECURSE SRC_FILES "${SRC_FOLDER}/*.cpp")
+#FILE(GLOB_RECURSE SRC_FILES "${SRC_FOLDER}/*pp")
 
-ADD_EXECUTABLE(${execName} ${SRC_FILES})
+set(HEADER_FILES ${SRC_FOLDER}/arapaho.hpp)
+
+ADD_EXECUTABLE(${execName} ${SRC_FILES} ${HEADER_FILES})
 add_definitions(-std=c++0x -g -O3)
+add_definitions(-DGPU -DCUDNN -I/usr/local/cuda/include/ -L./ -ldarknet-cpp-shared -L/usr/local/lib -lopencv_cudabgsegm -lopencv_cudaobjdetect -lopencv_cudastereo -lopencv_shape -lopencv_stitching -lopencv_cudafeatures2d -lopencv_superres -lopencv_cudacodec -lopencv_videostab -lopencv_cudaoptflow -lopencv_cudalegacy -lopencv_calib3d -lopencv_features2d -lopencv_objdetect -lopencv_highgui -lopencv_videoio -lopencv_photo -lopencv_imgcodecs -lopencv_cudawarping -lopencv_cudaimgproc -lopencv_cudafilters -lopencv_video -lopencv_ml -lopencv_imgproc -lopencv_flann -lopencv_cudaarithm -lopencv_viz -lopencv_core -lopencv_cudev -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand )
 
 TARGET_LINK_LIBRARIES(${execName}
                         ${ZED_LIBRARIES}
                         ${SPECIAL_OS_LIBS}
                         ${OpenCV_LIBRARIES}
 			${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_npp_LIBRARY}
+            darknet-cpp-shared
                     )
