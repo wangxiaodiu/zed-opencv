@@ -254,7 +254,8 @@ int main(int argc, char **argv) {
                         }
                       }
                   }
-                  distance /= cnt;
+                  if(cnt) distance /= cnt;
+                  else distance = 0;
                   if(DEBUG) {
                     std::cout << distance << "cm" << std::endl;
                   }
