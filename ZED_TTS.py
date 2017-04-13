@@ -23,12 +23,16 @@ def sentence_synth(obj_label, obj_depth, side_margin=0, dist_unit='meters'):
 # engine.setProperty('voice', sound[16].id)
 
 path = '/tmp/'
-with open(path + 'depth.txt') as file_object:
-    lines = file_object.readlines()
+while True:
+    with open(path + 'depth.txt') as file_object:
+        lines = file_object.readlines()
 
-obj_dict = dict(map(obj_pairing, lines))
-obj_label, obj_depth = sorted(obj_dict.items(), key=lambda x: x[1])[0]
+    obj_dict = dict(map(obj_pairing, lines))
+    obj_label, obj_depth = sorted(obj_dict.items(), key=lambda x: x[1])[0]
 
-engine = pyttsx.init()
-engine.say(sentence_synth(obj_label, obj_depth))
-engine.runAndWait()
+    engine = pyttsx.init()
+    engine.say(sentence_synth(obj_label, obj_depth))
+    engine.runAndWait()
+    engine = None
+
+    time.sleep(2)
