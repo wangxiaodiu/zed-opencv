@@ -46,20 +46,25 @@ static char INPUT_WEIGHTS_FILE[] = "input.weights";
 cv::Size displaySize(720*3, 404*3);
 void normalizeBoxes(box& box)
 {
-  float &x = box.x;
-  float &y = box.y;
-  float &w = box.w;
-  float &h = box.h;
+  float &x = box.x; float &y = box.y; float &w = box.w; float &h = box.h; 
+  if(x>1) x = 1; if(y>1) y = 1; if(w>1) w = 1; if(h>1) h = 1; 
+  if(x<0) x = 0; if(y<0) y = 0; if(w<0) w = 0; if(h<0) h = 0;
+}
 
-  if(x>1) x = 1;
-  if(y>1) y = 1;
-  if(w>1) w = 1;
-  if(h>1) h = 1;
-
-  if(x<0) x = 0;
-  if(y<0) y = 0;
-  if(w<0) w = 0;
-  if(h<0) h = 0;
+void mapcolor(float dist, cv::Scalar & color)
+{
+  if(dist < 30.0)
+    color = cv::Scalar(255,255,255);
+  else if(dist < 50.0)
+    color = cv::Scalar(0,0,255); // pure red
+  else if(dist < 100.0)
+    color = cv::Scalar(0,150,150);
+  else if(dist < 200.0)
+    color = cv::Scalar(0,255,0);
+  else if(dist < 500.0)
+    color = cv::Scalar(150,150,0);
+  else
+    color = cv::Scalar(255,0,0);
 }
 // darkent end
 
@@ -221,11 +226,9 @@ int main(int argc, char **argv) {
                   if(top < 0) top =0;
                   if(bot > displaySize.height) bot = displaySize.height-1;
 
-                  // calculate center coordinate
+                  // extract depth info
                   int center_x = point_cloud.getWidth() * (left+right)/(2.0*displaySize.width);
                   int center_y = point_cloud.getHeight() * (bot+top)/(2.0*displaySize.height);
-
-                  // extract depth info
                   sl::float4 point_depth;
                   if(DEBUG) {
                     std::cout << left << ' '<< right << ' '<< top << ' '<< bot << std::endl;
@@ -238,22 +241,24 @@ int main(int argc, char **argv) {
                   float distance = sqrt(x*x + y*y + z*z); // Measure the distance
 
                   // draw
-                  cv::Scalar &rect_color = text_color; //TODO
+                  cv::Scalar rect_color;
+                  mapcolor(distance, rect_color);
                   std::stringstream stream;
                   stream << std::fixed << std::setprecision(1) << distance;
                   std::string info = stream.str();
                   info += "cm";
 
                   cv::rectangle(image_ocv_display, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
-                  cv::putText(image_ocv_display, labels[i], cv::Point(left, top), 0, 1, text_color, 2, CV_AA);
-                  cv::putText(image_ocv_display, info, cv::Point(left, bot), 0, 1, text_color, 2, CV_AA);
+                  cv::putText(image_ocv_display, labels[i]+","+info, cv::Point(left, top), 0, 1, text_color, 2, CV_AA);
+                  // cv::putText(image_ocv_display, info, cv::Point(left, bot), 0, 1, text_color, 2, CV_AA);
 
                   cv::rectangle(depth_image_ocv_display, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
-                  cv::putText(depth_image_ocv_display, labels[i], cv::Point(left, top), 0, 1, text_color, 2, CV_AA);
-                  cv::putText(depth_image_ocv_display, info, cv::Point(left, bot), 0, 1, text_color, 2, CV_AA);
+                  cv::putText(depth_image_ocv_display, labels[i]+","+info, cv::Point(left, top), 0, 1, text_color, 2, CV_AA);
+                  // cv::putText(depth_image_ocv_display, info, cv::Point(left, bot), 0, 1, text_color, 2, CV_AA);
 
                   //write file
                   if(now_time-last_write_time > 1) {
+                    if(distance >= 30.0)
                     file_depth << labels[i] << ',' << distance << std::endl;
                   }
 
