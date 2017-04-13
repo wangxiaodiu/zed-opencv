@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
 
     // Set runtime parameters after opening the camera
     RuntimeParameters runtime_parameters;
-    runtime_parameters.sensing_mode = SENSING_MODE_STANDARD; // Use STANDARD sensing mode
+    runtime_parameters.sensing_mode = SENSING_MODE_FILL; // Use STANDARD sensing mode
 
     // Create sl and cv Mat to get ZED left image and depth image
     // Best way of sharing sl::Mat and cv::Mat :
@@ -199,7 +199,7 @@ int main(int argc, char **argv) {
 
                 // get depth measure
                 sl::Mat point_cloud;
-                zed.retrieveMeasure(point_cloud,MEASURE_XYZRGBA);
+                zed.retrieveMeasure(point_cloud,MEASURE_XYZ);
 
                 // file IO
                 time(&now_time);
