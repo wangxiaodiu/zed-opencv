@@ -32,6 +32,8 @@
 
 // darknet api header files and configuration
 #include <string>
+#include <fstream>
+#include <ctime>
 #include "arapaho.hpp"
 #include "opencv2/core/core.hpp"
 #include "opencv2/highgui/highgui.hpp"
@@ -94,10 +96,6 @@ int main(int argc, char **argv) {
     RuntimeParameters runtime_parameters;
     runtime_parameters.sensing_mode = SENSING_MODE_STANDARD; // Use STANDARD sensing mode
 
-    /******************DARKNET BEGIN***********************/
-
-    /******************DARKNET END*************************/
-
     // Create sl and cv Mat to get ZED left image and depth image
     // Best way of sharing sl::Mat and cv::Mat :
     // Create a sl::Mat and then construct a cv::Mat using the ptr to sl::Mat data.
@@ -153,6 +151,11 @@ int main(int argc, char **argv) {
     int numObjects = 0;
     /******************** DARKNET-CPP API END **************************/
 
+    // Create file and related time stamp
+    std::ofstream file_depth;
+    time_t last_write_time, now_time;
+    time(&last_write_time);
+
     // Loop until 'q' is pressed
     char key = ' ';
     while (key != 'q') {
@@ -193,6 +196,12 @@ int main(int argc, char **argv) {
                 sl::Mat point_cloud;
                 zed.retrieveMeasure(point_cloud,MEASURE_XYZRGBA);
 
+                // file IO
+                time(&now_time);
+                if(now_time-last_write_time > 1) {
+                  file_depth.open("/tmp/depth.txt");
+                }
+
                 // draw the bounding boxes and info
                 cv::Scalar text_color(255,255,255);
                 for(int i=0; i<numObjects; ++i){
@@ -211,11 +220,17 @@ int main(int argc, char **argv) {
                   if(right > displaySize.width) right = displaySize.width-1;
                   if(top < 0) top =0;
                   if(bot > displaySize.height) bot = displaySize.height-1;
-                  int center_x = (left+right)/2;
-                  int center_y = (bot+top)/2;
+
+                  // calculate center coordinate
+                  int center_x = point_cloud.getWidth() * (left+right)/(2.0*displaySize.width);
+                  int center_y = point_cloud.getHeight() * (bot+top)/(2.0*displaySize.height);
 
                   // extract depth info
                   sl::float4 point_depth;
+                  if(DEBUG) {
+                    std::cout << left << ' '<< right << ' '<< top << ' '<< bot << std::endl;
+                    std::cout << center_x << ',' << center_y << std::endl;
+                    }
                   point_cloud.getValue(center_x, center_y, &point_depth);
                   int x = point_depth.x;
                   int y = point_depth.y;
@@ -224,9 +239,10 @@ int main(int argc, char **argv) {
 
                   // draw
                   cv::Scalar &rect_color = text_color; //TODO
-                  std::string info = std::to_string(distance);
-                  info += " cm";
-                  // TODO : std::stringstream stream;
+                  std::stringstream stream;
+                  stream << std::fixed << std::setprecision(1) << distance;
+                  std::string info = stream.str();
+                  info += "cm";
 
                   cv::rectangle(image_ocv_display, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
                   cv::putText(image_ocv_display, labels[i], cv::Point(left, top), 0, 1, text_color, 2, CV_AA);
@@ -235,6 +251,18 @@ int main(int argc, char **argv) {
                   cv::rectangle(depth_image_ocv_display, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
                   cv::putText(depth_image_ocv_display, labels[i], cv::Point(left, top), 0, 1, text_color, 2, CV_AA);
                   cv::putText(depth_image_ocv_display, info, cv::Point(left, bot), 0, 1, text_color, 2, CV_AA);
+
+                  //write file
+                  if(now_time-last_write_time > 1) {
+                    file_depth << labels[i] << ',' << distance << std::endl;
+                  }
+
+                }
+
+                // file clean up and reset
+                if(now_time-last_write_time > 1) {
+                  file_depth.close();
+                  last_write_time = now_time;
                 }
 
                 //clean up
