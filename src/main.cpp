@@ -234,11 +234,14 @@ int main(int argc, char **argv) {
                     std::cout << left << ' '<< right << ' '<< top << ' '<< bot << std::endl;
                     std::cout << center_x << ',' << center_y << std::endl;
                     }
+
                   point_cloud.getValue(center_x, center_y, &point_depth);
-                  int x = point_depth.x;
-                  int y = point_depth.y;
-                  int z = point_depth.z;
-                  float distance = sqrt(x*x + y*y + z*z); // Measure the distance
+                  float &x = point_depth.x;
+                  float &y = point_depth.y;
+                  float &z = point_depth.z;
+                  // float distance = sqrt(x*x + y*y + z*z); // Measure the distance
+                  float distance = z; // Measure the distance
+
 
                   // draw
                   cv::Scalar rect_color;
