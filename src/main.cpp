@@ -238,19 +238,33 @@ int main(int argc, char **argv) {
                     std::cout << center_x << ',' << center_y << std::endl;
                     }
 
-                  point_cloud.getValue(center_x, center_y, &point_depth);
-                  float &x = point_depth.x;
-                  float &y = point_depth.y;
-                  float &z = point_depth.z;
-                  // float distance = sqrt(x*x + y*y + z*z); // Measure the distance
-                  float distance = z; // Measure the distance
+                  double distance = 0; // Measure the distance
+                  int cnt = 0;
+                  for(int xi = -1; xi<=1; ++xi){
+                    if(center_x + xi < pc_w && center_x + xi > 0)
+                      for(int yi = -1; yi <= 1; ++yi){
+                        if(center_y + yi < pc_h && center_y + yi >0){
+                          point_cloud.getValue(center_x+xi, center_y+yi, &point_depth);
+                          float &z = point_depth.z;
+                          if(z >= 30 && z <= 20*100){
+                            std::cout << z << distance << std::endl;
+                            distance += z;
+                            cnt++;
+                          }
+                        }
+                      }
+                  }
+                  distance /= cnt;
+                  if(DEBUG) {
+                    std::cout << distance << "cm" << std::endl;
+                  }
 
 
                   // draw
                   cv::Scalar rect_color;
                   mapcolor(distance, rect_color);
                   std::stringstream stream;
-                  stream << std::fixed << std::setprecision(1) << distance;
+                  stream << std::fixed << std::setprecision(2) << distance;
                   std::string info = stream.str();
                   info += "cm";
 
