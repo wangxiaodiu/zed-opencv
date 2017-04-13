@@ -227,10 +227,13 @@ int main(int argc, char **argv) {
                   if(bot > displaySize.height) bot = displaySize.height-1;
 
                   // extract depth info
-                  int center_x = point_cloud.getWidth() * (left+right)/(2.0*displaySize.width);
-                  int center_y = point_cloud.getHeight() * (bot+top)/(2.0*displaySize.height);
+                  int pc_h = point_cloud.getHeight();
+                  int pc_w = point_cloud.getWidth();
+                  int center_x = pc_w * (left+right)/(2.0*displaySize.width);
+                  int center_y = pc_h * (bot+top)/(2.0*displaySize.height);
                   sl::float4 point_depth;
                   if(DEBUG) {
+                    // std::cout << pc_h << ',' << pc_w << std::endl;
                     std::cout << left << ' '<< right << ' '<< top << ' '<< bot << std::endl;
                     std::cout << center_x << ',' << center_y << std::endl;
                     }
