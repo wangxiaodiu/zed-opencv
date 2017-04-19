@@ -43,6 +43,10 @@ static char INPUT_DATA_FILE[]    = "input.data";
 static char INPUT_CFG_FILE[]     = "input.cfg";
 static char INPUT_WEIGHTS_FILE[] = "input.weights";
 
+// some debug toggle
+const bool image_save_toggle = false;
+const bool DEBUG = false;
+
 cv::Size displaySize(720*3, 404*3);
 void normalizeBoxes(box& box)
 {
@@ -55,13 +59,13 @@ void mapcolor(float dist, cv::Scalar & color)
 {
   if(dist < 30.0)
     color = cv::Scalar(255,255,255);
-  else if(dist < 50.0)
+  else if(dist < 150.0)
     color = cv::Scalar(0,0,255); // pure red
-  else if(dist < 100.0)
+  else if(dist < 350.0)
     color = cv::Scalar(0,150,150);
-  else if(dist < 200.0)
-    color = cv::Scalar(0,255,0);
   else if(dist < 500.0)
+    color = cv::Scalar(0,255,0);
+  else if(dist < 1000.0)
     color = cv::Scalar(150,150,0);
   else
     color = cv::Scalar(255,0,0);
@@ -127,7 +131,6 @@ int main(int argc, char **argv) {
 
     /******************** DARKNET-CPP API *****************************/
     // darknet-cpp api
-    const bool DEBUG = true;
     box* boxes = 0;
     std::string * labels;
     ArapahoV2* p = new ArapahoV2();
@@ -162,6 +165,7 @@ int main(int argc, char **argv) {
     time(&last_write_time);
 
     // Loop until 'q' is pressed
+    int img_cnt=0;
     char key = ' ';
     while (key != 'q') {
 
@@ -247,7 +251,9 @@ int main(int argc, char **argv) {
                           point_cloud.getValue(center_x+xi, center_y+yi, &point_depth);
                           float &z = point_depth.z;
                           if(z >= 30 && z <= 20*100){
-                            std::cout << z << distance << std::endl;
+                            if(DEBUG){
+                              std::cout << z << distance << std::endl;
+                            }
                             distance += z;
                             cnt++;
                           }
@@ -289,6 +295,13 @@ int main(int argc, char **argv) {
                 if(now_time-last_write_time > 1) {
                   file_depth.close();
                   last_write_time = now_time;
+                  if(image_save_toggle)
+                    {
+                      std::string img_path="./";
+                      img_path += std::to_string(++img_cnt);
+                      imwrite(img_path+".jpg", image_ocv_display);
+                      imwrite(img_path+".depth.jpg", depth_image_ocv_display);
+                    }
                 }
 
                 //clean up
