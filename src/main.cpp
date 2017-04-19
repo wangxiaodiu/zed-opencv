@@ -47,6 +47,9 @@ static char INPUT_WEIGHTS_FILE[] = "input.weights";
 const bool image_save_toggle = false;
 const bool DEBUG = false;
 
+// togle depth image show and calculation
+bool depth_toggle = true;
+
 cv::Size displaySize(720*3, 404*3);
 void normalizeBoxes(box& box)
 {
@@ -58,7 +61,7 @@ void normalizeBoxes(box& box)
 void mapcolor(float dist, cv::Scalar & color)
 {
   if(dist < 30.0)
-    color = cv::Scalar(255,255,255);
+    color = cv::Scalar(0,0,0);
   else if(dist < 150.0)
     color = cv::Scalar(0,0,255); // pure red
   else if(dist < 350.0)
@@ -169,16 +172,29 @@ int main(int argc, char **argv) {
     char key = ' ';
     while (key != 'q') {
 
+      // toggle depth
+      if(key == 'd'){
+        depth_toggle = !depth_toggle;
+        if(!depth_toggle) cvDestroyWindow("Depth");
+        else{
+          cv::namedWindow("Depth", cv::WINDOW_AUTOSIZE);
+          cv::setMouseCallback("Depth", onMouseCallback, (void*) &mouseStruct);
+        }
+      }
         // Grab and display image and depth
         if (zed.grab(runtime_parameters) == SUCCESS) {
 
             zed.retrieveImage(image_zed, VIEW_LEFT); // Retrieve the left image
-            zed.retrieveImage(depth_image_zed, VIEW_DEPTH); //Retrieve the depth view (image)
-            zed.retrieveMeasure(mouseStruct.depth, MEASURE_DEPTH); // Retrieve the depth measure (32bits)
+            if(depth_toggle){
+              zed.retrieveImage(depth_image_zed, VIEW_DEPTH); //Retrieve the depth view (image)
+              zed.retrieveMeasure(mouseStruct.depth, MEASURE_DEPTH); // Retrieve the depth measure (32bits)
+            }
 
             // Resize image with OpenCV
             cv::resize(image_ocv, image_ocv_display, displaySize);
-            cv::resize(depth_image_ocv, depth_image_ocv_display, displaySize);
+            if(depth_toggle){
+              cv::resize(depth_image_ocv, depth_image_ocv_display, displaySize);
+            }
 
             /**************DARKNET API**************************/
             cv::resize(image_ocv, image, imageSize);
@@ -279,9 +295,11 @@ int main(int argc, char **argv) {
                   cv::putText(image_ocv_display, labels[i]+","+info, cv::Point(left, top), 0, 1, text_color, 2, CV_AA);
                   // cv::putText(image_ocv_display, info, cv::Point(left, bot), 0, 1, text_color, 2, CV_AA);
 
-                  cv::rectangle(depth_image_ocv_display, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
-                  cv::putText(depth_image_ocv_display, labels[i]+","+info, cv::Point(left, top), 0, 1, text_color, 2, CV_AA);
-                  // cv::putText(depth_image_ocv_display, info, cv::Point(left, bot), 0, 1, text_color, 2, CV_AA);
+                  if(depth_toggle){
+                    cv::rectangle(depth_image_ocv_display, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
+                    cv::putText(depth_image_ocv_display, labels[i]+","+info, cv::Point(left, top), 0, 1, text_color, 2, CV_AA);
+                    // cv::putText(depth_image_ocv_display, info, cv::Point(left, bot), 0, 1, text_color, 2, CV_AA);
+                  }
 
                   //write file
                   if(now_time-last_write_time > 1) {
@@ -300,7 +318,9 @@ int main(int argc, char **argv) {
                       std::string img_path="./";
                       img_path += std::to_string(++img_cnt);
                       imwrite(img_path+".jpg", image_ocv_display);
-                      imwrite(img_path+".depth.jpg", depth_image_ocv_display);
+                      if(depth_toggle){
+                        imwrite(img_path+".depth.jpg", depth_image_ocv_display);
+                      }
                     }
                 }
 
@@ -312,7 +332,9 @@ int main(int argc, char **argv) {
 
             // Display with OpenCV
             imshow("Image", image_ocv_display);
-            imshow("Depth", depth_image_ocv_display);
+            if(depth_toggle){
+              imshow("Depth", depth_image_ocv_display);
+            }
 
             key = cv::waitKey(10);
         }
