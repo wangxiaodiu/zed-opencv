@@ -224,8 +224,9 @@ int main(int argc, char **argv) {
                 p->GetBoxes(boxes, numObjects, labels);
 
                 // get depth measure
-                sl::Mat point_cloud;
-                zed.retrieveMeasure(point_cloud,MEASURE_XYZ);
+                // sl::Mat point_cloud;
+                // zed.retrieveMeasure(point_cloud,MEASURE_XYZ);
+                // TODO : change point cloud to depth
 
                 // file IO
                 time(&now_time);
@@ -253,8 +254,10 @@ int main(int argc, char **argv) {
                   if(bot > displaySize.height) bot = displaySize.height-1;
 
                   // extract depth info
-                  int pc_h = point_cloud.getHeight();
-                  int pc_w = point_cloud.getWidth();
+                  // int pc_h = point_cloud.getHeight();
+                  // int pc_w = point_cloud.getWidth();
+                  int pc_h = mouseStruct.depth.getHeight();
+                  int pc_w = mouseStruct.depth.getWidth();
                   int center_x = pc_w * (left+right)/(2.0*displaySize.width);
                   int center_y = pc_h * (bot+top)/(2.0*displaySize.height);
                   sl::float4 point_depth;
@@ -265,13 +268,15 @@ int main(int argc, char **argv) {
                     }
 
                   double distance = 0; // Measure the distance
+                  float z;
                   int cnt = 0;
                   for(int xi = -1; xi<=1; ++xi){
                     if(center_x + xi < pc_w && center_x + xi > 0)
                       for(int yi = -1; yi <= 1; ++yi){
                         if(center_y + yi < pc_h && center_y + yi >0){
-                          point_cloud.getValue(center_x+xi, center_y+yi, &point_depth);
-                          float &z = point_depth.z;
+                          //point_cloud.getValue(center_x+xi, center_y+yi, &point_depth);
+                          // float &z = point_depth.z;
+                          mouseStruct.depth.getValue(center_x+xi, center_y+yi, &z);
                           if(z >= 1 && z <= 65){
                             if(DEBUG){
                               std::cout << z << distance << std::endl;
