@@ -50,7 +50,7 @@ const bool DEBUG = false;
 // togle depth image show and calculation
 bool depth_toggle = true;
 
-cv::Size displaySize(720*3, 404*3);
+cv::Size displaySize(720*4, 404*4);
 void normalizeBoxes(box& box)
 {
   float &x = box.x; float &y = box.y; float &w = box.w; float &h = box.h; 
@@ -60,15 +60,15 @@ void normalizeBoxes(box& box)
 
 void mapcolor(float dist, cv::Scalar & color)
 {
-  if(dist < 30.0)
+  if(dist < 1)
     color = cv::Scalar(0,0,0);
-  else if(dist < 150.0)
+  else if(dist < 5.0)
     color = cv::Scalar(0,0,255); // pure red
-  else if(dist < 350.0)
+  else if(dist < 10.0)
     color = cv::Scalar(0,150,150);
-  else if(dist < 500.0)
+  else if(dist < 25.0)
     color = cv::Scalar(0,255,0);
-  else if(dist < 1000.0)
+  else if(dist < 45.0)
     color = cv::Scalar(150,150,0);
   else
     color = cv::Scalar(255,0,0);
@@ -96,8 +96,8 @@ int main(int argc, char **argv) {
     InitParameters init_params;
     init_params.camera_resolution = RESOLUTION_HD720;
     init_params.depth_mode = DEPTH_MODE_PERFORMANCE;
-    init_params.coordinate_units = UNIT_CENTIMETER;
-    init_params.depth_minimum_distance = 30 ; // Set the minimum depth perception distance at 30cm
+    init_params.coordinate_units = UNIT_FOOT;
+    init_params.depth_minimum_distance = 1 ; // Set the minimum depth perception distance at 1 feet
 
     // Open the camera
     ERROR_CODE err = zed.open(init_params);
@@ -174,12 +174,18 @@ int main(int argc, char **argv) {
 
       // toggle depth
       if(key == 'd'){
-        depth_toggle = !depth_toggle;
-        if(!depth_toggle) cvDestroyWindow("Depth");
-        else{
+        if(!depth_toggle)
+        {
           cv::namedWindow("Depth", cv::WINDOW_AUTOSIZE);
           cv::setMouseCallback("Depth", onMouseCallback, (void*) &mouseStruct);
         }
+        depth_toggle = true;
+      }
+      if(key == 'x'){
+        if(depth_toggle) {
+          cvDestroyWindow("Depth");
+        }
+        depth_toggle = false;
       }
         // Grab and display image and depth
         if (zed.grab(runtime_parameters) == SUCCESS) {
@@ -266,7 +272,7 @@ int main(int argc, char **argv) {
                         if(center_y + yi < pc_h && center_y + yi >0){
                           point_cloud.getValue(center_x+xi, center_y+yi, &point_depth);
                           float &z = point_depth.z;
-                          if(z >= 30 && z <= 20*100){
+                          if(z >= 1 && z <= 65){
                             if(DEBUG){
                               std::cout << z << distance << std::endl;
                             }
@@ -279,7 +285,7 @@ int main(int argc, char **argv) {
                   if(cnt) distance /= cnt;
                   else distance = 0;
                   if(DEBUG) {
-                    std::cout << distance << "cm" << std::endl;
+                    std::cout << distance << "feet" << std::endl;
                   }
 
 
@@ -287,9 +293,9 @@ int main(int argc, char **argv) {
                   cv::Scalar rect_color;
                   mapcolor(distance, rect_color);
                   std::stringstream stream;
-                  stream << std::fixed << std::setprecision(2) << distance;
+                  stream << std::fixed << std::setprecision(1) << distance;
                   std::string info = stream.str();
-                  info += "cm";
+                  info += "feet";
 
                   cv::rectangle(image_ocv_display, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
                   cv::putText(image_ocv_display, labels[i]+","+info, cv::Point(left, top), 0, 1, text_color, 2, CV_AA);
@@ -303,10 +309,9 @@ int main(int argc, char **argv) {
 
                   //write file
                   if(now_time-last_write_time > 1) {
-                    if(distance >= 30.0)
+                    if(distance >= 1)
                     file_depth << labels[i] << ',' << distance << std::endl;
                   }
-
                 }
 
                 // file clean up and reset

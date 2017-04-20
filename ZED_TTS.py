@@ -4,9 +4,9 @@ import time
 
 def obj_pairing(line):
     obj, depth = line.strip().split(',')
-    return [obj, float(depth)/100]
+    return [obj, float(depth)]
 
-def sentence_synth(obj_label, obj_depth, side_margin=0, out_unit='meters'):
+def sentence_synth(obj_label, obj_depth, side_margin=0, out_unit='feet'):
     '''
     This function receives the info regarding the closest object in screen
         obj_label -- object label
@@ -17,11 +17,11 @@ def sentence_synth(obj_label, obj_depth, side_margin=0, out_unit='meters'):
     '''
     obj_label = obj_label
     obj_depth = obj_depth
-    
-    if out_unit.lower() == 'feet':
-        obj_depth *= 3.28084
-        side_margin *= 3.28084
-    sntnc = 'There is a %s %.1f %s ahead.'%(obj_label, obj_depth, out_unit)
+
+    if out_unit.lower() == 'meters':
+        obj_depth /= 3.28084
+        side_margin /= 3.28084
+    sntnc = 'A %s %.1f %s ahead.'%(obj_label, obj_depth, out_unit)
 
     if side_margin > 0:
         sntnc += (' %.1f %s to your right.'%(side_margin, out_unit))
@@ -32,18 +32,21 @@ def sentence_synth(obj_label, obj_depth, side_margin=0, out_unit='meters'):
 # sound = engine.getProperty('voices')
 # engine.setProperty('voice', sound[16].id)
 
-path = '/home/cheng/Documents/ZED_Project/'
+path = '/tmp/'
 while True:
     with open(path + 'depth.txt') as file_object:
         lines = file_object.readlines()
 
     obj_dict = dict(map(obj_pairing, lines))
-    obj_label, obj_depth = sorted(obj_dict.items(), key=lambda x: x[1])[0]
+    try:
+        obj_label, obj_depth = sorted(obj_dict.items(), key=lambda x: x[1])[0]
+    except:
+        continue
 
     engine = pyttsx.init()
     rate = engine.getProperty('rate')
-    engine.setProperty('rate', rate-50)
+    engine.setProperty('rate', rate-20)
     engine.say(sentence_synth(obj_label, obj_depth, out_unit='feet'))
     engine.runAndWait()
     engine = None
-    time.sleep(5)
+    time.sleep(2)
