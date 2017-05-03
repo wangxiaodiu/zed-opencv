@@ -167,8 +167,11 @@ int main(int argc, char **argv) {
 
     // Create file and related time stamp
     std::ofstream file_depth;
-    time_t last_write_time, now_time;
+    time_t last_write_time, now_time, fps_now, fps_last;
     time(&last_write_time);
+    time(&fps_last);
+    fps_now = fps_last;
+    int fps_cnt = 0;
 
     // Loop until 'q' is pressed
     int img_cnt=0;
@@ -211,8 +214,7 @@ int main(int argc, char **argv) {
             arapahoImage.w = image.size().width;
             arapahoImage.h = image.size().height;
             arapahoImage.channels = 4;
-            // Detect the objects in the image
-            p->Detect(arapahoImage, 0.24, 0.5, numObjects);
+            p->Detect(arapahoImage, 0.24, 0.5, numObjects); // Detect the objects in the image
             if(DEBUG){
               printf("Detected %d objects\n", numObjects);
             }
@@ -226,16 +228,15 @@ int main(int argc, char **argv) {
                   }
                 p->GetBoxes(boxes, numObjects, labels);
 
-                // get depth measure
-                // sl::Mat point_cloud;
-                // zed.retrieveMeasure(point_cloud,MEASURE_XYZ);
-                // TODO : change point cloud to depth
-
                 // file IO
                 time(&now_time);
                 if(now_time-last_write_time > 1) {
                   file_depth.open("/tmp/depth.txt");
                 }
+
+                // draw 3*5 grid on image
+                // TODO
+
 
                 // draw the bounding boxes and info
                 cv::Scalar text_color(255,255,255);
@@ -270,8 +271,8 @@ int main(int argc, char **argv) {
                     std::cout << center_x << ',' << center_y << std::endl;
                     }
 
-
-                  double distance = 0; // Measure the distance
+                  // Measure the distance
+                  double distance = 0;
                   float z;
                   int cnt = 0;
                   for(int xi = -1; xi<=1; ++xi){
@@ -293,7 +294,6 @@ int main(int argc, char **argv) {
                   }
                   if(cnt) distance /= cnt;
                   else distance = 0;
-                  // distance = cv::sum(cv::mean(depth_ocv(cv::Rect(left*pc_w/displaySize.width, top*pc_w/displaySize.width,(right-left)*pc_w/displaySize.width,(bot-top)*pc_w/displaySize.width))))[0];
                   if(DEBUG) {
                     std::cout << distance << "feet" << std::endl;
                   }
@@ -310,12 +310,10 @@ int main(int argc, char **argv) {
 
                     cv::rectangle(image_ocv_display, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
                     cv::putText(image_ocv_display, labels[i]+","+info, cv::Point(left, top), 0, 1, text_color, 2, CV_AA);
-                    // cv::putText(image_ocv_display, info, cv::Point(left, bot), 0, 1, text_color, 2, CV_AA);
 
                     if(depth_toggle){
                       cv::rectangle(depth_image_ocv_display, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
                       cv::putText(depth_image_ocv_display, labels[i]+","+info, cv::Point(left, top), 0, 1, text_color, 2, CV_AA);
-                      // cv::putText(depth_image_ocv_display, info, cv::Point(left, bot), 0, 1, text_color, 2, CV_AA);
                     }
                   }
 
@@ -354,6 +352,18 @@ int main(int argc, char **argv) {
             }
 
             key = cv::waitKey(10);
+        }
+
+        //measure time
+        time(&fps_now);
+        if(fps_now>fps_last){
+          if(fps_now-fps_last==1){
+            std::cout << "FPS:" << fps_cnt << std::endl;
+          }
+          fps_cnt = 0;
+          fps_last = fps_now;
+        } else{
+          ++fps_cnt;
         }
     }
 
