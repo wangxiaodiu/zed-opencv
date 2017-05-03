@@ -58,6 +58,20 @@ void normalizeBoxes(box& box)
   if(x<0) x = 0; if(y<0) y = 0; if(w<0) w = 0; if(h<0) h = 0;
 }
 
+void drawgrids(cv::Mat & img, int row, int col)
+{
+  cv::Scalar grid_color(255,255,255);
+  int thickness = 5;
+  int w = img.size().width; int w_gap = w/col;
+  int h = img.size().height; int h_gap = h/row;
+  for(int x=1; x<col; ++x){
+    cv::line(img, cv::Point(float(x)*w/col,0), cv::Point(float(x)*w/col, h-1), grid_color, thickness);
+  }
+  for(int y=1; y<row; ++y){
+    cv::line(img, cv::Point(0,float(y)*h/row), cv::Point(w-1,float(y)*h/row), grid_color, thickness);
+  }
+}
+
 void mapcolor(float dist, cv::Scalar & color)
 {
   if(dist < 2)
@@ -235,7 +249,7 @@ int main(int argc, char **argv) {
                 }
 
                 // draw 3*5 grid on image
-                // TODO
+                drawgrids(image_ocv_display, 3, 5);
 
 
                 // draw the bounding boxes and info
