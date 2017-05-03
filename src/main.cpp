@@ -39,12 +39,12 @@
 #include "opencv2/highgui/highgui.hpp"
 #define MAX_OBJECTS_PER_FRAME (100)
 
-static char INPUT_DATA_FILE[]    = "input.data"; 
+static char INPUT_DATA_FILE[]    = "input.data";
 static char INPUT_CFG_FILE[]     = "input.cfg";
 static char INPUT_WEIGHTS_FILE[] = "input.weights";
 
 // some debug toggle
-const bool image_save_toggle = false;
+const bool image_save_toggle = true;
 const bool DEBUG = false;
 
 // togle depth image show and calculation
@@ -56,6 +56,22 @@ void normalizeBoxes(box& box)
   float &x = box.x; float &y = box.y; float &w = box.w; float &h = box.h; 
   if(x>1) x = 1; if(y>1) y = 1; if(w>1) w = 1; if(h>1) h = 1; 
   if(x<0) x = 0; if(y<0) y = 0; if(w<0) w = 0; if(h<0) h = 0;
+}
+
+void drawintendedpath(cv::Mat &img)
+{
+  cv::Scalar path_color(0,255,0); // pure green
+  int thickness = 5;
+  int w = img.size().width;
+  int h = img.size().height;
+
+  cv::Point center(w/2-1, h/2-1);
+
+  int x_l = 1000;
+  cv::line(img, cv::Point(x_l, h-1), center, path_color, thickness);
+
+  int x_r = 1880;
+  cv::line(img, cv::Point(x_r, h-1), center, path_color, thickness);
 }
 
 void drawgrids(cv::Mat & img, int row, int col)
@@ -110,7 +126,7 @@ int main(int argc, char **argv) {
 
     // Set configuration parameters
     InitParameters init_params;
-    init_params.camera_resolution = RESOLUTION_HD720;
+    init_params.camera_resolution = RESOLUTION_HD2K;
     init_params.depth_mode = DEPTH_MODE_PERFORMANCE;
     init_params.coordinate_units = UNIT_FOOT;
     init_params.depth_minimum_distance = 2 ; // Set the minimum depth perception distance at 2 feet
@@ -222,6 +238,10 @@ int main(int argc, char **argv) {
               cv::resize(depth_image_ocv, depth_image_ocv_display, displaySize);
             }
 
+            // draw 3*5 grid on image
+            drawgrids(image_ocv_display, 3, 5);
+            drawintendedpath(image_ocv_display);
+
             /**************DARKNET API**************************/
             cv::resize(image_ocv, image, imageSize);
             arapahoImage.bgr = image.data;
@@ -247,10 +267,6 @@ int main(int argc, char **argv) {
                 if(now_time-last_write_time > 1) {
                   file_depth.open("/tmp/depth.txt");
                 }
-
-                // draw 3*5 grid on image
-                drawgrids(image_ocv_display, 3, 5);
-
 
                 // draw the bounding boxes and info
                 cv::Scalar text_color(255,255,255);
