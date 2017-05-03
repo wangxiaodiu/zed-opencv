@@ -60,18 +60,20 @@ void normalizeBoxes(box& box)
 
 void mapcolor(float dist, cv::Scalar & color)
 {
-  if(dist < 1)
+  if(dist < 2)
     color = cv::Scalar(0,0,0);
-  else if(dist < 5.0)
+  else if(dist < 4.0)
     color = cv::Scalar(0,0,255); // pure red
+  else if(dist < 6.0)
+    color = cv::Scalar(80,127,255); // orange
+  else if(dist < 8.0)
+    color = cv::Scalar(0,255,255); //yellow
   else if(dist < 10.0)
-    color = cv::Scalar(0,150,150);
-  else if(dist < 25.0)
-    color = cv::Scalar(0,255,0);
-  else if(dist < 45.0)
-    color = cv::Scalar(150,150,0);
+    color = cv::Scalar(0,255,0); // green
+  else if(dist < 12.0)
+    color = cv::Scalar(255,0,0); // blue
   else
-    color = cv::Scalar(255,0,0);
+    color = cv::Scalar(128,0,128); // PURPLE
 }
 // darkent end
 
@@ -97,7 +99,7 @@ int main(int argc, char **argv) {
     init_params.camera_resolution = RESOLUTION_HD720;
     init_params.depth_mode = DEPTH_MODE_PERFORMANCE;
     init_params.coordinate_units = UNIT_FOOT;
-    init_params.depth_minimum_distance = 1 ; // Set the minimum depth perception distance at 1 feet
+    init_params.depth_minimum_distance = 2 ; // Set the minimum depth perception distance at 2 feet
 
     // Open the camera
     ERROR_CODE err = zed.open(init_params);
@@ -124,6 +126,7 @@ int main(int argc, char **argv) {
     // Mouse callback initialization
     mouseStruct.depth.alloc(image_size, MAT_TYPE_32F_C1);
     mouseStruct._resize = displaySize;
+    // cv::Mat depth_ocv = slMat2cvMat(mouseStruct.depth);
 
     // Give a name to OpenCV Windows
     cv::namedWindow("Depth", cv::WINDOW_AUTOSIZE);
@@ -267,6 +270,7 @@ int main(int argc, char **argv) {
                     std::cout << center_x << ',' << center_y << std::endl;
                     }
 
+
                   double distance = 0; // Measure the distance
                   float z;
                   int cnt = 0;
@@ -277,7 +281,7 @@ int main(int argc, char **argv) {
                           //point_cloud.getValue(center_x+xi, center_y+yi, &point_depth);
                           // float &z = point_depth.z;
                           mouseStruct.depth.getValue(center_x+xi, center_y+yi, &z);
-                          if(z >= 1 && z <= 65){
+                          if(z >= 2.0 && z <= 65){
                             if(DEBUG){
                               std::cout << z << distance << std::endl;
                             }
@@ -289,32 +293,35 @@ int main(int argc, char **argv) {
                   }
                   if(cnt) distance /= cnt;
                   else distance = 0;
+                  // distance = cv::sum(cv::mean(depth_ocv(cv::Rect(left*pc_w/displaySize.width, top*pc_w/displaySize.width,(right-left)*pc_w/displaySize.width,(bot-top)*pc_w/displaySize.width))))[0];
                   if(DEBUG) {
                     std::cout << distance << "feet" << std::endl;
                   }
 
 
                   // draw
-                  cv::Scalar rect_color;
-                  mapcolor(distance, rect_color);
-                  std::stringstream stream;
-                  stream << std::fixed << std::setprecision(1) << distance;
-                  std::string info = stream.str();
-                  info += "feet";
+                  if(distance >=2.0) {
+                    cv::Scalar rect_color;
+                    mapcolor(distance, rect_color);
+                    std::stringstream stream;
+                    stream << std::fixed << std::setprecision(1) << distance;
+                    std::string info = stream.str();
+                    info += "feet";
 
-                  cv::rectangle(image_ocv_display, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
-                  cv::putText(image_ocv_display, labels[i]+","+info, cv::Point(left, top), 0, 1, text_color, 2, CV_AA);
-                  // cv::putText(image_ocv_display, info, cv::Point(left, bot), 0, 1, text_color, 2, CV_AA);
+                    cv::rectangle(image_ocv_display, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
+                    cv::putText(image_ocv_display, labels[i]+","+info, cv::Point(left, top), 0, 1, text_color, 2, CV_AA);
+                    // cv::putText(image_ocv_display, info, cv::Point(left, bot), 0, 1, text_color, 2, CV_AA);
 
-                  if(depth_toggle){
-                    cv::rectangle(depth_image_ocv_display, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
-                    cv::putText(depth_image_ocv_display, labels[i]+","+info, cv::Point(left, top), 0, 1, text_color, 2, CV_AA);
-                    // cv::putText(depth_image_ocv_display, info, cv::Point(left, bot), 0, 1, text_color, 2, CV_AA);
+                    if(depth_toggle){
+                      cv::rectangle(depth_image_ocv_display, cv::Point(left, bot), cv::Point(right, top), rect_color, 5);
+                      cv::putText(depth_image_ocv_display, labels[i]+","+info, cv::Point(left, top), 0, 1, text_color, 2, CV_AA);
+                      // cv::putText(depth_image_ocv_display, info, cv::Point(left, bot), 0, 1, text_color, 2, CV_AA);
+                    }
                   }
 
                   //write file
                   if(now_time-last_write_time > 1) {
-                    if(distance >= 1)
+                    if(distance >= 2.0)
                     file_depth << labels[i] << ',' << distance << std::endl;
                   }
                 }
