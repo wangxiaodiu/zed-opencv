@@ -53,7 +53,7 @@ static char INPUT_WEIGHTS_FILE[] = "input.weights";
 
 // some debug toggle
 const bool image_save_toggle = false;
-const bool DEBUG = true;
+const bool DEBUG = false;
 
 // togle depth image show and calculation
 bool depth_toggle = true;
