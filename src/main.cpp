@@ -43,9 +43,17 @@ static char INPUT_DATA_FILE[]    = "input.data";
 static char INPUT_CFG_FILE[]     = "input.cfg";
 static char INPUT_WEIGHTS_FILE[] = "input.weights";
 
+// static char INPUT_DATA_FILE[]    = "cfg/combine9k.data";
+// static char INPUT_CFG_FILE[]     = "cfg/yolo9000.cfg";
+// static char INPUT_WEIGHTS_FILE[] = "yolo9000.weights";
+
+// static char INPUT_DATA_FILE[]    = "cfg/voc.data";
+// static char INPUT_CFG_FILE[]     = "cfg/yolo-voc.cfg";
+// static char INPUT_WEIGHTS_FILE[] = "yolo-voc.weights";
+
 // some debug toggle
-const bool image_save_toggle = true;
-const bool DEBUG = false;
+const bool image_save_toggle = false;
+const bool DEBUG = true;
 
 // togle depth image show and calculation
 bool depth_toggle = true;
@@ -126,7 +134,7 @@ int main(int argc, char **argv) {
 
     // Set configuration parameters
     InitParameters init_params;
-    init_params.camera_resolution = RESOLUTION_HD2K;
+    init_params.camera_resolution = RESOLUTION_HD720;
     init_params.depth_mode = DEPTH_MODE_PERFORMANCE;
     init_params.coordinate_units = UNIT_FOOT;
     init_params.depth_minimum_distance = 2 ; // Set the minimum depth perception distance at 2 feet
@@ -249,6 +257,7 @@ int main(int argc, char **argv) {
             arapahoImage.h = image.size().height;
             arapahoImage.channels = 4;
             p->Detect(arapahoImage, 0.24, 0.5, numObjects); // Detect the objects in the image
+            // printf("Detected %d objects\n", numObjects);
             if(DEBUG){
               printf("Detected %d objects\n", numObjects);
             }
@@ -260,7 +269,7 @@ int main(int argc, char **argv) {
                   {
                     printf("Nothing detected\n");
                   }
-                p->GetBoxes(boxes, numObjects, labels);
+                p->GetBoxes(boxes, labels, numObjects);
 
                 // file IO
                 time(&now_time);
@@ -271,6 +280,16 @@ int main(int argc, char **argv) {
                 // draw the bounding boxes and info
                 cv::Scalar text_color(255,255,255);
                 for(int i=0; i<numObjects; ++i){
+                  // continue if is not handle/lever/knob/latch
+                  // std::vector<std::string> targets = {"lever", "knob", "latch", "handle"};
+                  // bool go_ahead = false;
+                  // for(int j = 0; j<targets.size(); ++j){
+                  //   if(targets[j]==labels[i]){
+                  //     go_ahead=true;
+                  //     break;
+                  //   }
+                  // }
+                  //if(!go_ahead) continue;
                   if(DEBUG) {
                     std::cout << labels[i] << ',';
                     printf("Box #%d: x,y,w,h = [%f, %f, %f, %f]\n", i, boxes[i].x, boxes[i].y, boxes[i].w, boxes[i].h);
