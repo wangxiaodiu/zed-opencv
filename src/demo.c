@@ -12,7 +12,6 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #endif
 
 #define FRAMES 3
@@ -56,7 +55,7 @@ char fifo_depth_path[] = "/tmp/zed_darknet_fifo_depth";
 void *fetch_in_thread(void *ptr)
 {
     in = get_image_from_stream(cap);
-    in_depth = get_image_from_stream(cap_depth);
+    /* in_depth = get_image_from_stream(cap_depth); */
 
     if(!in.data){
         error("Stream closed.");
@@ -95,8 +94,8 @@ void *detect_in_thread(void *ptr)
     det = images[(demo_index + FRAMES/2 + 1)%FRAMES];
     demo_index = (demo_index + 1)%FRAMES;
 
-    /* draw_detections(det, l.w*l.h*l.n, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes); */
-    draw_detections(det_depth, l.w*l.h*l.n, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
+    draw_detections(det, l.w*l.h*l.n, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes);
+    /* draw_detections(det_depth, l.w*l.h*l.n, demo_thresh, boxes, probs, demo_names, demo_alphabet, demo_classes); */
 
     return 0;
 }
@@ -129,6 +128,9 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
     srand(2222222);
 
+    //debug
+    printf("DEBUG\n");
+
     if(filename){
         printf("video file: %s\n", filename);
         cap = cvCaptureFromFile(filename);
@@ -136,16 +138,16 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         // from zed_darknet_fifo get the image
         /* cap = cvCaptureFromCAM(cam_index); */
         cap = cvCaptureFromFile(fifo_path);
-        printf("1st fifo opened!\n");
-        fflush(stdout);
-        /* usleep(500*1000); */
-        printf("try 2nd fifo!\n");
-        cap_depth = cvCaptureFromFile(fifo_depth_path);
-        printf("2nd fifo opened!\n");
+        printf("DEBUG\n");
+        /* cap_depth = cvCaptureFromFile(fifo_depth_path); */
+        /* printf("Dnnnnnn\n"); */
     }
 
     if(!cap) error("Couldn't connect to webcam.\n");
-    if(!cap_depth) error("Couldn't connect to depth cam.\n");
+    /* if(!cap_depth) error("Couldn't connect to depth cam.\n"); */
+
+    //debug
+    printf("DEBUG\n");
 
     layer l = net.layers[net.n-1];
     int j;
@@ -169,7 +171,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     detect_in_thread(0);
     disp = det;
     det = in;
-    det_depth = in_depth;
+    /* det_depth = in_depth; */
     det_s = in_s;
 
     for(j = 0; j < FRAMES/2; ++j){
@@ -177,7 +179,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         detect_in_thread(0);
         disp = det;
         det = in;
-        det_depth = in_depth;
+        /* det_depth = in_depth; */
         det_s = in_s;
     }
 
@@ -216,11 +218,11 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
             if(delay == 0){
                 free_image(disp);
-                /* disp  = det; */
-                disp  = det_depth;
+                disp  = det;
+                /* disp  = det_depth; */
             }
             det   = in;
-            det_depth  = in_depth;
+            /* det_depth  = in_depth; */
             det_s = in_s;
             //debug
             printf("1");

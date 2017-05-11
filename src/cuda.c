@@ -9,6 +9,8 @@ int gpu_index = 0;
 #include <stdlib.h>
 #include <time.h>
 
+
+
 void cuda_set_device(int n)
 {
     gpu_index = n;
@@ -119,41 +121,98 @@ dim3 cuda_gridsize(size_t n){
 }
 
 #ifdef CUDNN
+
+#define MAX_CUDNN (16)
+static int cudnn_init[MAX_CUDNN] = {0};
+static cudnnHandle_t cudnn_handle_t[MAX_CUDNN];
 cudnnHandle_t cudnn_handle()
 {
-    static int init[16] = {0};
-    static cudnnHandle_t handle[16];
     int i = cuda_get_device();
-    if(!init[i]) {
-        cudnnCreate(&handle[i]);
-        init[i] = 1;
+    if(!cudnn_init[i]) {
+        cudnnCreate(&cudnn_handle_t[i]);
+        cudnn_init[i] = 1;
     }
-    return handle[i];
+    return cudnn_handle_t[i];
 }
+
+void cudnn_handle_reset()
+{
+    for(int i = 0;i < MAX_CUDNN;i ++) 
+    {
+        cudnn_init[i] = 0;
+        cudnn_handle_t[i] = 0;
+    }
+}
+
 #endif
+
+#define MAX_BLAS (16)
+static int blas_init[MAX_BLAS] = {0};
+static cublasHandle_t blas_handle_t[MAX_BLAS];
+void blas_handle_reset()
+{
+    for(int i = 0;i < MAX_BLAS;i ++) 
+    {
+        blas_init[i] = 0;
+        blas_handle_t[i] = 0;
+    }
+}
 
 cublasHandle_t blas_handle()
 {
-    static int init[16] = {0};
-    static cublasHandle_t handle[16];
     int i = cuda_get_device();
-    if(!init[i]) {
-        cublasCreate(&handle[i]);
-        init[i] = 1;
+    if(!blas_init[i]) {
+        cublasCreate(&blas_handle_t[i]);
+        blas_init[i] = 1;
     }
-    return handle[i];
+    return blas_handle_t[i];
 }
 
+
+#ifdef _ENABLE_CUDA_MEM_DEBUG
+void cuda_dump_mem_stat()
+{
+    size_t free, total;
+    cudaMemGetInfo(&free, &total);
+    printf("CUDA Memory Status: Free/Total = [%lu]/[%lu]\n", free, total);
+}
+
+#endif
+
+
+#ifdef _ENABLE_CUDA_MEM_DEBUG
+// For debugging CUDA allocations
+static unsigned int cuda_make_array_cnt = 0;
+static unsigned int cuda_free_cnt = 0;
+static unsigned long long cuda_make_array_size_float = 0;
+static unsigned long long cuda_make_array_size_int = 0;
+#endif
 float *cuda_make_array(float *x, size_t n)
 {
     float *x_gpu;
     size_t size = sizeof(float)*n;
+#ifdef _ENABLE_CUDA_MEM_DEBUG  
+    printf("CUDA alloc/free cnts/size/reqsize = [%d], [%d], [%llu], [%lu]\n", cuda_make_array_cnt, cuda_free_cnt, cuda_make_array_size_float, n ); 
+#endif   
     cudaError_t status = cudaMalloc((void **)&x_gpu, size);
     check_error(status);
     if(x){
         status = cudaMemcpy(x_gpu, x, size, cudaMemcpyHostToDevice);
         check_error(status);
     }
+#ifdef _ENABLE_CUDA_MEM_DEBUG    
+    else
+    {
+        float* cptr = (float*) calloc(size, 1);
+        if(cptr) {
+            cudaMemcpy(x_gpu, cptr, size,cudaMemcpyHostToDevice);        
+            free(cptr);
+        }
+    }    
+    cuda_make_array_cnt ++;
+    cuda_make_array_size_float += n;
+    printf("cuda_make_array allocated [%p] of [%lu]\n", x_gpu, size);
+#endif    
     if(!x_gpu) error("Cuda malloc failed\n");
     return x_gpu;
 }
@@ -191,17 +250,45 @@ int *cuda_make_int_array(size_t n)
     size_t size = sizeof(int)*n;
     cudaError_t status = cudaMalloc((void **)&x_gpu, size);
     check_error(status);
+#ifdef _ENABLE_CUDA_MEM_DEBUG    
+    printf("CUDA alloc/free cnts/size/reqsize(int) = [%d], [%d], [%llu], [%lu]\n", cuda_make_array_cnt, cuda_free_cnt, cuda_make_array_size_int, n );        
+    if(x_gpu)
+    {
+        float* cptr = (float*) calloc(size, 1);
+        if(cptr) {
+            cudaMemcpy(x_gpu, cptr, size,cudaMemcpyHostToDevice);        
+            free(cptr);
+        }
+    }
+    cuda_make_array_cnt ++;
+    cuda_make_array_size_int += n;
+    printf("cuda_make_int_array allocated [%p] of [%lu]\n", x_gpu, size);    
+#endif    
     return x_gpu;
 }
 
 void cuda_free(float *x_gpu)
 {
+    if(!x_gpu)
+    {
+        printf("cuda_free called with nil x_gpu\n");
+        return;
+    }
     cudaError_t status = cudaFree(x_gpu);
     check_error(status);
+#ifdef _ENABLE_CUDA_MEM_DEBUG       
+    cuda_free_cnt ++;
+    printf("cuda_free freed [%p]\n", x_gpu);
+#endif    
 }
 
 void cuda_push_array(float *x_gpu, float *x, size_t n)
 {
+    if(!x_gpu)
+    {
+        printf("cuda_push_array called with nil x_gpu\n");
+        return;
+    }    
     size_t size = sizeof(float)*n;
     cudaError_t status = cudaMemcpy(x_gpu, x, size, cudaMemcpyHostToDevice);
     check_error(status);
@@ -209,9 +296,23 @@ void cuda_push_array(float *x_gpu, float *x, size_t n)
 
 void cuda_pull_array(float *x_gpu, float *x, size_t n)
 {
+    if(!x_gpu || !x)
+    {
+        printf("cuda_pull_array called with nil x_gpu or nil x\n");
+        return;
+    }    
     size_t size = sizeof(float)*n;
     cudaError_t status = cudaMemcpy(x, x_gpu, size, cudaMemcpyDeviceToHost);
     check_error(status);
+}
+
+float cuda_mag_array(float *x_gpu, size_t n)
+{
+    float *temp = (float*)calloc(n, sizeof(float));
+    cuda_pull_array(x_gpu, temp, n);
+    float m = mag_array(temp, n);
+    if(temp) free(temp);
+    return m;
 }
 
 #endif

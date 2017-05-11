@@ -58,7 +58,7 @@ const bool DEBUG = false;
 // togle depth image show and calculation
 bool depth_toggle = true;
 
-cv::Size displaySize(720*4, 404*4);
+cv::Size displaySize(720*2, 404*2);
 void normalizeBoxes(box& box)
 {
   float &x = box.x; float &y = box.y; float &w = box.w; float &h = box.h; 
