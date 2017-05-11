@@ -73,13 +73,15 @@ void drawintendedpath(cv::Mat &img)
   int w = img.size().width;
   int h = img.size().height;
 
-  cv::Point center(w/2-1, h/2-1);
+  /* cv::Point center(w/2-1, h/2-1); */
 
-  int x_l = 1000;
-  cv::line(img, cv::Point(x_l, h-1), center, path_color, thickness);
+  int l_x_bot = w/4; 
+  int l_x_top = w/3;
+  cv::line(img, cv::Point(l_x_bot, h-1), cv::Point(l_x_top, 0), path_color, thickness);
 
-  int x_r = 1880;
-  cv::line(img, cv::Point(x_r, h-1), center, path_color, thickness);
+  int r_x_bot = w*3/4; 
+  int r_x_top = w*2/3;
+  cv::line(img, cv::Point(r_x_bot, h-1), cv::Point(r_x_top, 0), path_color, thickness);
 }
 
 void drawgrids(cv::Mat & img, int row, int col)
