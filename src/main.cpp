@@ -55,8 +55,10 @@ static char INPUT_WEIGHTS_FILE[] = "input.weights";
 const bool image_save_toggle = false;
 const bool DEBUG = false;
 
-// togle depth image show and calculation
+// toggle depth/path/grids show and calculation
 bool depth_toggle = true;
+bool path_toggle = true; 
+bool grid_toggle = true; 
 
 cv::Size displaySize(720*2, 404*2);
 void normalizeBoxes(box& box)
@@ -69,7 +71,7 @@ void normalizeBoxes(box& box)
 void drawintendedpath(cv::Mat &img)
 {
   cv::Scalar path_color(0,255,0); // pure green
-  int thickness = 5;
+  int thickness = 3;
   int w = img.size().width;
   int h = img.size().height;
 
@@ -87,7 +89,7 @@ void drawintendedpath(cv::Mat &img)
 void drawgrids(cv::Mat & img, int row, int col)
 {
   cv::Scalar grid_color(255,255,255);
-  int thickness = 5;
+  int thickness = 3;
   int w = img.size().width; int w_gap = w/col;
   int h = img.size().height; int h_gap = h/row;
   for(int x=1; x<col; ++x){
@@ -218,6 +220,7 @@ int main(int argc, char **argv) {
     char key = ' ';
     while (key != 'q') {
 
+
       // toggle depth
       if(key == 'd'){
         if(!depth_toggle)
@@ -227,12 +230,16 @@ int main(int argc, char **argv) {
         }
         depth_toggle = true;
       }
-      if(key == 'x'){
+      if(key == 'D'){
         if(depth_toggle) {
           cvDestroyWindow("Depth");
         }
         depth_toggle = false;
       }
+      if(key == 'p'){ path_toggle = true; }
+      if(key == 'P'){ path_toggle = false; }
+      if(key == 'g'){ grid_toggle = true; }
+      if(key == 'G'){ grid_toggle = false; }
         // Grab and display image and depth
         if (zed.grab(runtime_parameters) == SUCCESS) {
 
@@ -249,8 +256,12 @@ int main(int argc, char **argv) {
             }
 
             // draw 3*5 grid on image
-            drawgrids(image_ocv_display, 3, 5);
-            drawintendedpath(image_ocv_display);
+            if(grid_toggle){
+                drawgrids(image_ocv_display, 3, 5);
+            }
+            if(path_toggle){
+                drawintendedpath(image_ocv_display);
+            }
 
             /**************DARKNET API**************************/
             cv::resize(image_ocv, image, imageSize);
