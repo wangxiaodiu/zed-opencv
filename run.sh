@@ -1,5 +1,5 @@
-cd ./build/
-./ZED_with_OpenCV&
-sleep 10
+#!/bin/bash
+cd ~/niu/zed-opencv/build
+(./ZED_with_OpenCV;killall ZED_TTS.py) &
 cd ..
-python ZED_TTS.py
+sleep 8 && ./ZED_TTS.py
