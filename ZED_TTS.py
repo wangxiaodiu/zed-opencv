@@ -1,3 +1,4 @@
+#!//home/mmvc/anaconda2/bin/python
 # install pyttsx and libgcc
 import pyttsx
 import time
