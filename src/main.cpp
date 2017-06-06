@@ -39,9 +39,9 @@
 #include "opencv2/highgui/highgui.hpp"
 #define MAX_OBJECTS_PER_FRAME (100)
 
-static char INPUT_DATA_FILE[]    = "input.data";
-static char INPUT_CFG_FILE[]     = "input.cfg";
-static char INPUT_WEIGHTS_FILE[] = "input.weights";
+//static char INPUT_DATA_FILE[]    = "input.data";
+//static char INPUT_CFG_FILE[]     = "input.cfg";
+//static char INPUT_WEIGHTS_FILE[] = "input.weights";
 
 // static char INPUT_DATA_FILE[]    = "cfg/combine9k.data";
 // static char INPUT_CFG_FILE[]     = "cfg/yolo9000.cfg";
@@ -50,6 +50,10 @@ static char INPUT_WEIGHTS_FILE[] = "input.weights";
 // static char INPUT_DATA_FILE[]    = "cfg/voc.data";
 // static char INPUT_CFG_FILE[]     = "cfg/yolo-voc.cfg";
 // static char INPUT_WEIGHTS_FILE[] = "yolo-voc.weights";
+
+static char INPUT_DATA_FILE[]    = "cfg/my.data";
+static char INPUT_CFG_FILE[]     = "cfg/my-yolo-voc.cfg";
+static char INPUT_WEIGHTS_FILE[] = "my-yolo-voc_final_2.weights";
 
 // some debug toggle
 const bool image_save_toggle = false;
@@ -60,7 +64,7 @@ bool depth_toggle = true;
 bool path_toggle = true; 
 bool grid_toggle = true; 
 
-cv::Size displaySize(720*2, 404*2);
+cv::Size displaySize(720*4, 404*4);
 void normalizeBoxes(box& box)
 {
   float &x = box.x; float &y = box.y; float &w = box.w; float &h = box.h; 
@@ -269,7 +273,7 @@ int main(int argc, char **argv) {
             arapahoImage.w = image.size().width;
             arapahoImage.h = image.size().height;
             arapahoImage.channels = 4;
-            p->Detect(arapahoImage, 0.24, 0.5, numObjects); // Detect the objects in the image
+            p->Detect(arapahoImage, 0.14, 0.2, numObjects); // Detect the objects in the image
             // printf("Detected %d objects\n", numObjects);
             if(DEBUG){
               printf("Detected %d objects\n", numObjects);
@@ -414,6 +418,11 @@ int main(int argc, char **argv) {
             }
 
             key = cv::waitKey(10);
+        }
+        else
+        {
+            std::cout << "grab failed" << std::endl;
+            continue;
         }
 
         //measure time
