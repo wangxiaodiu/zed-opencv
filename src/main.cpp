@@ -39,18 +39,6 @@
 #include "opencv2/highgui/highgui.hpp"
 #define MAX_OBJECTS_PER_FRAME (100)
 
-//static char INPUT_DATA_FILE[]    = "input.data";
-//static char INPUT_CFG_FILE[]     = "input.cfg";
-//static char INPUT_WEIGHTS_FILE[] = "input.weights";
-
-// static char INPUT_DATA_FILE[]    = "cfg/combine9k.data";
-// static char INPUT_CFG_FILE[]     = "cfg/yolo9000.cfg";
-// static char INPUT_WEIGHTS_FILE[] = "yolo9000.weights";
-
-// static char INPUT_DATA_FILE[]    = "cfg/voc.data";
-// static char INPUT_CFG_FILE[]     = "cfg/yolo-voc.cfg";
-// static char INPUT_WEIGHTS_FILE[] = "yolo-voc.weights";
-
 static char INPUT_DATA_FILE[]    = "cfg/my.data";
 static char INPUT_CFG_FILE[]     = "cfg/my-yolo-voc.cfg";
 static char INPUT_WEIGHTS_FILE[] = "my-yolo-voc_final_2.weights";
@@ -60,9 +48,9 @@ const bool image_save_toggle = false;
 const bool DEBUG = false;
 
 // toggle depth/path/grids show and calculation
-bool depth_toggle = true;
-bool path_toggle = true; 
-bool grid_toggle = true; 
+bool depth_toggle = false;
+bool path_toggle = false; 
+bool grid_toggle = false; 
 
 cv::Size displaySize(720*4, 404*4);
 void normalizeBoxes(box& box)
