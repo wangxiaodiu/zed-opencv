@@ -3,8 +3,13 @@ import pyttsx
 import time
 
 def obj_pairing(line):
-    obj, depth = line.strip().split(',')
-    return [obj, float(depth)]
+    '''
+    The input is line consisting of:
+    lable,distance,x,y
+    '''
+    obj, info = line.strip().split(',', 1)
+    info = map(lambda x:float(x), info.split(','))
+    return (obj, tuple(info))
 
 def sentence_synth(obj_label, obj_depth, side_margin=0, out_unit='feet'):
     '''
@@ -32,21 +37,27 @@ def sentence_synth(obj_label, obj_depth, side_margin=0, out_unit='feet'):
 # sound = engine.getProperty('voices')
 # engine.setProperty('voice', sound[16].id)
 
-path = '/tmp/'
-while True:
-    with open(path + 'depth.txt') as file_object:
-        lines = file_object.readlines()
+if __name__ == "__main__":
+    path = '/tmp/'
+    while True:
+        with open(path + 'depth.txt') as file_object:
+            lines = file_object.readlines()
 
-    obj_dict = dict(map(obj_pairing, lines))
-    try:
-        obj_label, obj_depth = sorted(obj_dict.items(), key=lambda x: x[1])[0]
-    except:
-        continue
+        obj_dict = dict(map(obj_pairing, lines))
+        if(len(obj_dict) == 2):
+            pass
+            # TODO: joy stick
+        elif obj_dict.keys()[0] == "hand":
+            pass
+            # TODO: no alert
+        else:
+            pass
+            # TODO: raise your hand
 
-    engine = pyttsx.init()
-    rate = engine.getProperty('rate')
-    engine.setProperty('rate', rate-20)
-    engine.say(sentence_synth(obj_label, obj_depth, out_unit='feet'))
-    engine.runAndWait()
-    engine = None
-    time.sleep(2)
+        engine = pyttsx.init()
+        rate = engine.getProperty('rate')
+        engine.setProperty('rate', rate-20)
+        engine.say(sentence_synth(obj_label, obj_depth, out_unit='feet'))
+        engine.runAndWait()
+        engine = None
+        time.sleep(2)
