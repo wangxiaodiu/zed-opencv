@@ -40,15 +40,15 @@
 #define MAX_OBJECTS_PER_FRAME (100)
 
 static char INPUT_DATA_FILE[]    = "cfg/my.data";
-static char INPUT_CFG_FILE[]     = "cfg/my-yolo-voc.cfg";
-static char INPUT_WEIGHTS_FILE[] = "my-yolo-voc_final_2.weights";
+static char INPUT_CFG_FILE[]     = "cfg/my-yolo-voc.2.0.cfg";
+static char INPUT_WEIGHTS_FILE[] = "my-yolo-voc_final.weights";
 
 // some debug toggle
 const bool image_save_toggle = false;
 const bool DEBUG = false;
 
 // toggle depth/path/grids show and calculation
-bool depth_toggle = false;
+bool depth_toggle = true;
 bool path_toggle = false; 
 bool grid_toggle = false; 
 
@@ -163,8 +163,11 @@ int main(int argc, char **argv) {
     // cv::Mat depth_ocv = slMat2cvMat(mouseStruct.depth);
 
     // Give a name to OpenCV Windows
-    cv::namedWindow("Depth", cv::WINDOW_AUTOSIZE);
-    cv::setMouseCallback("Depth", onMouseCallback, (void*) &mouseStruct);
+    if(depth_toggle)
+    {
+        cv::namedWindow("Depth", cv::WINDOW_AUTOSIZE);
+        cv::setMouseCallback("Depth", onMouseCallback, (void*) &mouseStruct);
+    }
 
     // Jetson only. Execute the calling thread on 2nd core
     Camera::sticktoCPUCore(2);
@@ -261,7 +264,7 @@ int main(int argc, char **argv) {
             arapahoImage.w = image.size().width;
             arapahoImage.h = image.size().height;
             arapahoImage.channels = 4;
-            p->Detect(arapahoImage, 0.14, 0.2, numObjects); // Detect the objects in the image
+            p->Detect(arapahoImage, 0.24, 0.5, numObjects); // Detect the objects in the image
             // printf("Detected %d objects\n", numObjects);
             if(DEBUG){
               printf("Detected %d objects\n", numObjects);
@@ -374,7 +377,7 @@ int main(int argc, char **argv) {
                   //write file
                   if(now_time-last_write_time > 1) {
                     if(distance >= 2.0)
-                    file_depth << labels[i] << ',' << distance << std::endl;
+                    file_depth << labels[i] << ',' << distance << ',' << boxes[i].x << ',' << boxes[i].y << std::endl;
                   }
                 }
 
