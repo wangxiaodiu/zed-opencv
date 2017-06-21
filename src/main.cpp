@@ -39,9 +39,9 @@
 #include "opencv2/highgui/highgui.hpp"
 #define MAX_OBJECTS_PER_FRAME (100)
 
-static char INPUT_DATA_FILE[]    = "cfg/my.data";
-static char INPUT_CFG_FILE[]     = "cfg/my-yolo-voc.2.0.cfg";
-static char INPUT_WEIGHTS_FILE[] = "my-yolo-voc_final.weights";
+static char INPUT_DATA_FILE[]    = "cfg/door_hand.data";
+static char INPUT_CFG_FILE[]     = "cfg/my-yolo-voc-door-hand.2.0.cfg";
+static char INPUT_WEIGHTS_FILE[] = "my-yolo-voc-door-hand_final.weights";
 
 // some debug toggle
 const bool image_save_toggle = false;
