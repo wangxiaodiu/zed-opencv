@@ -42,15 +42,21 @@
 static char INPUT_DATA_FILE[]    = "cfg/door_hand.data";
 static char INPUT_CFG_FILE[]     = "cfg/my-yolo-voc-door-hand.2.0.cfg";
 static char INPUT_WEIGHTS_FILE[] = "my-yolo-voc-door-hand_final.weights";
+// static char INPUT_DATA_FILE[]    = "cfg/coco.data";
+// static char INPUT_CFG_FILE[]     = "cfg/yolo.cfg";
+// static char INPUT_WEIGHTS_FILE[] = "yolo.weights";
+
+const float COMM_GAP = 0.5;
+const float IMG_SAVE_GAP = 0.5;
 
 // some debug toggle
-const bool image_save_toggle = false;
+const bool image_save_toggle = true;
 const bool DEBUG = false;
 
 // toggle depth/path/grids show and calculation
 bool depth_toggle = true;
-bool path_toggle = false; 
-bool grid_toggle = false; 
+bool path_toggle = false;
+bool grid_toggle = false;
 
 cv::Size displaySize(720*4, 404*4);
 void normalizeBoxes(box& box)
@@ -264,7 +270,7 @@ int main(int argc, char **argv) {
             arapahoImage.w = image.size().width;
             arapahoImage.h = image.size().height;
             arapahoImage.channels = 4;
-            p->Detect(arapahoImage, 0.24, 0.5, numObjects); // Detect the objects in the image
+            p->Detect(arapahoImage, 0.1, 0.3, numObjects); // Detect the objects in the image
             // printf("Detected %d objects\n", numObjects);
             if(DEBUG){
               printf("Detected %d objects\n", numObjects);
@@ -288,16 +294,6 @@ int main(int argc, char **argv) {
                 // draw the bounding boxes and info
                 cv::Scalar text_color(255,255,255);
                 for(int i=0; i<numObjects; ++i){
-                  // continue if is not handle/lever/knob/latch
-                  // std::vector<std::string> targets = {"lever", "knob", "latch", "handle"};
-                  // bool go_ahead = false;
-                  // for(int j = 0; j<targets.size(); ++j){
-                  //   if(targets[j]==labels[i]){
-                  //     go_ahead=true;
-                  //     break;
-                  //   }
-                  // }
-                  //if(!go_ahead) continue;
                   if(DEBUG) {
                     std::cout << labels[i] << ',';
                     printf("Box #%d: x,y,w,h = [%f, %f, %f, %f]\n", i, boxes[i].x, boxes[i].y, boxes[i].w, boxes[i].h);
@@ -355,7 +351,6 @@ int main(int argc, char **argv) {
                     std::cout << distance << "feet" << std::endl;
                   }
 
-
                   // draw
                   if(distance >=2.0) {
                     cv::Scalar rect_color;
@@ -375,19 +370,19 @@ int main(int argc, char **argv) {
                   }
 
                   //write file
-                  if(now_time-last_write_time > 1) {
+                  if(now_time-last_write_time > COMM_GAP) {
                     if(distance >= 2.0)
                     file_depth << labels[i] << ',' << distance << ',' << boxes[i].x << ',' << boxes[i].y << std::endl;
                   }
                 }
 
                 // file clean up and reset
-                if(now_time-last_write_time > 1) {
+                if(now_time-last_write_time > IMG_SAVE_GAP) {
                   file_depth.close();
                   last_write_time = now_time;
                   if(image_save_toggle)
                     {
-                      std::string img_path="./";
+                      std::string img_path="./images/";
                       img_path += std::to_string(++img_cnt);
                       imwrite(img_path+".jpg", image_ocv_display);
                       if(depth_toggle){
@@ -416,7 +411,7 @@ int main(int argc, char **argv) {
             continue;
         }
 
-        //measure time
+        //measure fps
         time(&fps_now);
         if(fps_now>fps_last){
           if(fps_now-fps_last==1){
